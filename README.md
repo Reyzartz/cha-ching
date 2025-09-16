@@ -1,39 +1,45 @@
-# Welcome to your Expo app 👋
+# Cha-Ching Monorepo �
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+This is a monorepo containing the Cha-Ching mobile application and its backend server.
+
+## Project Structure
+
+```
+cha-ching/
+├── client/          # React Native/Expo mobile app
+├── server/          # Backend server (placeholder)
+└── package.json     # Root workspace configuration
+```
 
 ## Get started
 
-1. Install dependencies
+1. Install dependencies for all workspaces
 
    ```bash
-   npm install
+   bun install:all
    ```
 
-2. Start the app
+2. Start the mobile app (client)
 
    ```bash
-   npx expo start
+   bun client:start
    ```
 
-In the output, you'll find options to open the app in a
+3. Run on specific platforms
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+   ```bash
+   bun client:android    # Android
+   bun client:ios        # iOS
+   bun client:web        # Web
+   ```
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+## Client App
 
-## Get a fresh project
+The client is an [Expo](https://expo.dev) React Native application located in the `client/` directory. It uses [file-based routing](https://docs.expo.dev/router/introduction) and you can start developing by editing the files inside the **client/app** directory.
 
-When you're ready, run:
+## Server
 
-```bash
-npm run reset-project
-```
-
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+The server is located in the `server/` directory and is currently a placeholder for future backend development.
 
 ## Learn more
 
