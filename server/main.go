@@ -1,19 +1,48 @@
 package main
 
 import (
+	"cha-ching-server/internal/app"
+	"cha-ching-server/internal/routes"
+	"flag"
 	"fmt"
-	"log"
 	"net/http"
+	"time"
 )
 
-func helloHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Hello, World!")
+func main() {
+	var port int
+
+	flag.IntVar(&port, "port", 8080, "Port to run the server on")
+	flag.Parse()
+
+	app, err := app.NewApplication()
+
+	app.Logger.Printf("Starting server on port %d", port)
+
+	if err != nil {
+		panic(err)
+	}
+
+	Start(app, port)
 }
 
-func main() {
-	http.HandleFunc("/", helloHandler)
-	
-	port := ":8080"
-	fmt.Printf("Server starting on http://localhost%s\n", port)
-	log.Fatal(http.ListenAndServe(port, nil))
+func Start(app *app.Application, port int) {
+	r := routes.RegisterRoutes(app)
+
+	server := &http.Server{
+		Addr:         fmt.Sprintf(":%d", port),
+		Handler:      r,
+		IdleTimeout:  time.Minute,
+		ReadTimeout:  30 * time.Second,
+		WriteTimeout: 30 * time.Second,
+	}
+
+	app.Logger.Printf("Listing on port %d", port)
+
+	err := server.ListenAndServe()
+
+	if err != nil {
+		panic(err)
+	}
+
 }
