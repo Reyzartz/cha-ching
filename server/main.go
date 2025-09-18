@@ -16,12 +16,13 @@ func main() {
 	flag.Parse()
 
 	app, err := app.NewApplication()
-
-	app.Logger.Printf("Starting server on port %d", port)
-
 	if err != nil {
 		panic(err)
 	}
+
+	defer app.Database.Close()
+
+	app.Logger.Printf("Starting server on port %d", port)
 
 	Start(app, port)
 }

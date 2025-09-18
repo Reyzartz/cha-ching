@@ -38,4 +38,8 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
+# database
+database
+
+
 app-example
