@@ -20,8 +20,23 @@ func RegisterRoutes(app *app.Application) *chi.Mux {
 		MaxAge:           300,
 	}))
 
+	// Health check endpoint
 	r.Get("/health", app.HealthCheck)
-	r.Get("/expenses", app.ExpenseHandler.HandleGetAllExpenses)
 
+	// User endpoints
+	r.Post("/users", app.ExpenseHandler.HandleCreateUser)
+	r.Get("/users/{id}", app.ExpenseHandler.HandleGetUser)
+
+	// Category endpoints
+	r.Post("/categories", app.ExpenseHandler.HandleCreateCategory)
+	r.Get("/categories", app.ExpenseHandler.HandleGetAllCategories)
+
+	// Payment method endpoints
+	r.Post("/payment-methods", app.ExpenseHandler.HandleCreatePaymentMethod)
+	r.Get("/payment-methods", app.ExpenseHandler.HandleGetAllPaymentMethods)
+
+	// Expense endpoints
+	r.Post("/expenses", app.ExpenseHandler.HandleCreateExpense)
+	r.Get("/expenses", app.ExpenseHandler.HandleGetAllExpenses)
 	return r
 }

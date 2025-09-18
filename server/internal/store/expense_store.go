@@ -1,0 +1,303 @@
+package store
+
+import (
+	"database/sql"
+)
+
+type User struct {
+	ID    int    `json:"id"`
+	Name  string `json:"name"`
+	Email string `json:"email"`
+}
+
+type Expense struct {
+	ID              int     `json:"id"`
+	UserID          int     `json:"user_id"`
+	CategoryID      int     `json:"category_id"`
+	PaymentMethodID int     `json:"payment_method_id"`
+	Amount          float64 `json:"amount"`
+	ExpenseDate     string  `json:"expense_date"`
+}
+
+type Category struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
+}
+
+type PaymentMethod struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
+}
+
+type PostgresExpenseStore struct {
+	db *sql.DB
+}
+
+func NewPostgresExpenseStore(db *sql.DB) *PostgresExpenseStore {
+	return &PostgresExpenseStore{
+		db: db,
+	}
+}
+
+type ExpenseStore interface {
+	// User methods
+	CreateUser(user *User) (*User, error)
+	GetUserByID(id int64) (*User, error)
+	// UpdateUser(user *User) error
+	// DeleteUser(id int64) error
+
+	// // Expense methods
+	CreateExpense(expense *Expense) (*Expense, error)
+	// GetExpenseByID(id int64) (*Expense, error)
+	// UpdateExpense(expense *Expense) error
+	// DeleteExpense(id int64) error
+	ListExpensesByUserID(userID int64) ([]*Expense, error)
+
+	// // Category methods
+	CreateCategory(category *Category) (*Category, error)
+	// UpdateCategory(category *Category) error
+	// DeleteCategory(id int64) error
+	ListCategories() ([]*Category, error)
+
+	// // PaymentMethod methods
+	CreatePaymentMethod(paymentMethod *PaymentMethod) (*PaymentMethod, error)
+	// UpdatePaymentMethod(paymentMethod *PaymentMethod) error
+	// DeletePaymentMethod(id int64) error
+	ListPaymentMethods() ([]*PaymentMethod, error)
+}
+
+func (pg *PostgresExpenseStore) CreateUser(user *User) (*User, error) {
+	tx, err := pg.db.Begin()
+	if err != nil {
+		return nil, err
+	}
+
+	defer tx.Rollback()
+
+	query := `
+	INSERT INTO users (name, email) 
+	VALUES ($1, $2) 
+	RETURNING id`
+
+	err = tx.QueryRow(query, user.Name, user.Email).Scan(&user.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}
+
+func (pg *PostgresExpenseStore) GetUserByID(id int64) (*User, error) {
+	user := &User{}
+
+	query := `
+	SELECT id, name, email
+	FROM users
+	WHERE id = $1
+	`
+
+	err := pg.db.QueryRow(query, id).Scan(
+		&user.ID,
+		&user.Name,
+		&user.Email,
+	)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}
+
+func (pg *PostgresExpenseStore) CreateCategory(category *Category) (*Category, error) {
+	tx, err := pg.db.Begin()
+	if err != nil {
+		return nil, err
+	}
+
+	defer tx.Rollback()
+
+	query := `
+	INSERT INTO categories (name) 
+	VALUES ($1) 
+	RETURNING id`
+
+	err = tx.QueryRow(query, category.Name).Scan(&category.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return nil, err
+	}
+
+	return category, nil
+}
+
+func (pg *PostgresExpenseStore) ListCategories() ([]*Category, error) {
+	categories := []*Category{}
+
+	query := `
+	SELECT id, name
+	FROM categories
+	ORDER BY id
+	`
+	rows, err := pg.db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var category Category
+		err := rows.Scan(&category.ID, &category.Name)
+		if err != nil {
+			return nil, err
+		}
+		categories = append(categories, &category)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return categories, nil
+}
+
+func (pg *PostgresExpenseStore) CreatePaymentMethod(paymentMethod *PaymentMethod) (*PaymentMethod, error) {
+	tx, err := pg.db.Begin()
+	if err != nil {
+		return nil, err
+	}
+
+	defer tx.Rollback()
+
+	query := `
+	INSERT INTO payment_methods (name) 
+	VALUES ($1) 
+	RETURNING id`
+
+	err = tx.QueryRow(query, paymentMethod.Name).Scan(&paymentMethod.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return nil, err
+	}
+
+	return paymentMethod, nil
+}
+
+func (pg *PostgresExpenseStore) ListPaymentMethods() ([]*PaymentMethod, error) {
+	paymentMethods := []*PaymentMethod{}
+
+	query := `
+	SELECT id, name
+	FROM payment_methods
+	ORDER BY id
+	`
+	rows, err := pg.db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var paymentMethod PaymentMethod
+		err := rows.Scan(&paymentMethod.ID, &paymentMethod.Name)
+		if err != nil {
+			return nil, err
+		}
+		paymentMethods = append(paymentMethods, &paymentMethod)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return paymentMethods, nil
+}
+
+func (pg *PostgresExpenseStore) CreateExpense(expense *Expense) (*Expense, error) {
+	tx, err := pg.db.Begin()
+	if err != nil {
+		return nil, err
+	}
+
+	defer tx.Rollback()
+
+	query := `
+	INSERT INTO expenses (
+		user_id,
+		category_id,
+		payment_method_id,
+		amount,
+		expense_date
+	) VALUES ( 
+		$1, $2, $3, $4, $5
+	)
+	RETURNING ID
+	`
+	err = tx.QueryRow(query, expense.UserID, expense.CategoryID, expense.PaymentMethodID, expense.Amount, expense.ExpenseDate).Scan(&expense.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return nil, err
+	}
+
+	return expense, nil
+}
+
+func (pg *PostgresExpenseStore) ListExpensesByUserID(userID int64) ([]*Expense, error) {
+	expenses := []*Expense{}
+
+	query := `
+	SELECT id, user_id, category_id, payment_method_id, amount, expense_date
+	FROM expenses
+	WHERE user_id = $1
+	ORDER BY expense_date DESC
+	`
+	rows, err := pg.db.Query(query, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var expense Expense
+		err := rows.Scan(
+			&expense.ID,
+			&expense.UserID,
+			&expense.CategoryID,
+			&expense.PaymentMethodID,
+			&expense.Amount,
+			&expense.ExpenseDate,
+		)
+		if err != nil {
+			return nil, err
+		}
+		expenses = append(expenses, &expense)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return expenses, nil
+}

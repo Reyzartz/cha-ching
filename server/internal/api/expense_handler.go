@@ -1,45 +1,172 @@
 package api
 
 import (
-	"encoding/json"
+	"cha-ching-server/internal/store"
+	"cha-ching-server/internal/utils"
+	"fmt"
 	"log"
 	"net/http"
 )
 
 type ExpenseHandler struct {
-	logger *log.Logger
+	logger       *log.Logger
+	expenseStore store.ExpenseStore
 }
 
-func NewExpenseHandler(logger *log.Logger) *ExpenseHandler {
+func NewExpenseHandler(logger *log.Logger, expenseStore store.ExpenseStore) *ExpenseHandler {
 	return &ExpenseHandler{
 		logger,
+		expenseStore,
 	}
 }
 
-func (eh *ExpenseHandler) HandleGetAllExpenses(w http.ResponseWriter, r *http.Request) {
+func (eh *ExpenseHandler) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
+	var user store.User
 
-	js, err := json.MarshalIndent(map[string]interface{}{
-		"data": []map[string]interface{}{
-			{"name": "Some thing", "amount": 2000, "category": "to expensive", "date": "2025-07-06T18:39:29.401Z"},
-			{"name": "Lunch", "amount": 200, "category": "Food", "date": "2025-07-06T18:50:54.780Z"},
-			{"name": "mae", "amount": 200, "category": "Cat", "date": "2025-07-14T19:39:56.748Z"},
-			{"name": "too bloody expensive", "amount": 2000, "category": "open man", "date": "2025-09-16T20:05:56.703Z"},
-		},
-	}, "", "  ")
-
-	if err != nil {
-		eh.logger.Printf("Error marshalling expenses: %v", err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+	if err := utils.ReadRequestBody(r, &user); err != nil {
+		eh.logger.Printf("ERROR: decoding create user request body: %v", err)
+		utils.WriteJSONResponse(w, http.StatusBadRequest, utils.Envelope{"error": "invalid request body"})
 		return
 	}
 
-	js = append(js, '\n')
+	createdUser, err := eh.expenseStore.CreateUser(&user)
+	if err != nil {
+		eh.logger.Printf("ERROR: CreateUser: %v", err)
+		utils.WriteJSONResponse(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})
+		return
+	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.WriteHeader(http.StatusOK)
-	w.Write(js)
+	utils.WriteJSONResponse(w, http.StatusCreated, utils.Envelope{
+		"data": createdUser,
+	})
+}
 
-	eh.logger.Printf("Returned all expenses")
+func (eh *ExpenseHandler) HandleGetUser(w http.ResponseWriter, r *http.Request) {
+	id, err := utils.ReadIDParam(r)
+	if err != nil {
+		eh.logger.Printf("ERROR: ReadIDParam: %v", err)
+		utils.WriteJSONResponse(w, http.StatusBadRequest, utils.Envelope{"error": "invalid id parameter"})
+		return
+	}
 
+	user, err := eh.expenseStore.GetUserByID(id)
+	fmt.Printf("User: %+v, Error: %v\n", user, err)
+	if err != nil {
+		eh.logger.Printf("ERROR: GetUserByID: %v", err)
+		utils.WriteJSONResponse(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})
+		return
+	}
+
+	utils.WriteJSONResponse(w, http.StatusOK, utils.Envelope{
+		"data": user,
+	})
+}
+
+func (eh *ExpenseHandler) HandleCreateCategory(w http.ResponseWriter, r *http.Request) {
+	var category store.Category
+
+	err := utils.ReadRequestBody(r, &category)
+	if err != nil {
+		eh.logger.Printf("ERROR: decoding create category request body: %v", err)
+		utils.WriteJSONResponse(w, http.StatusBadRequest, utils.Envelope{"error": "invalid request body"})
+		return
+	}
+
+	createdCategory, err := eh.expenseStore.CreateCategory(&category)
+	if err != nil {
+		eh.logger.Printf("ERROR: CreateCategory: %v", err)
+		utils.WriteJSONResponse(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})
+		return
+	}
+
+	utils.WriteJSONResponse(w, http.StatusCreated, utils.Envelope{
+		"data": createdCategory,
+	})
+}
+
+func (eh *ExpenseHandler) HandleGetAllCategories(w http.ResponseWriter, r *http.Request) {
+	categories, err := eh.expenseStore.ListCategories()
+	if err != nil {
+		eh.logger.Printf("ERROR: ListCategories: %v", err)
+		utils.WriteJSONResponse(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})
+		return
+	}
+
+	utils.WriteJSONResponse(w, http.StatusOK, utils.Envelope{
+		"data": categories,
+	})
+}
+
+func (eh *ExpenseHandler) HandleCreatePaymentMethod(w http.ResponseWriter, r *http.Request) {
+	var paymentMethod store.PaymentMethod
+
+	err := utils.ReadRequestBody(r, &paymentMethod)
+	if err != nil {
+		eh.logger.Printf("ERROR: decoding create payment method request body: %v", err)
+		utils.WriteJSONResponse(w, http.StatusBadRequest, utils.Envelope{"error": "invalid request body"})
+		return
+	}
+
+	createdPaymentMethod, err := eh.expenseStore.CreatePaymentMethod(&paymentMethod)
+	if err != nil {
+		eh.logger.Printf("ERROR: CreatePaymentMethod: %v", err)
+		utils.WriteJSONResponse(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})
+		return
+	}
+
+	utils.WriteJSONResponse(w, http.StatusCreated, utils.Envelope{
+		"data": createdPaymentMethod,
+	})
+}
+
+func (eh *ExpenseHandler) HandleGetAllPaymentMethods(w http.ResponseWriter, r *http.Request) {
+	paymentMethods, err := eh.expenseStore.ListPaymentMethods()
+	if err != nil {
+		eh.logger.Printf("ERROR: ListPaymentMethods: %v", err)
+		utils.WriteJSONResponse(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})
+		return
+	}
+
+	utils.WriteJSONResponse(w, http.StatusOK, utils.Envelope{
+		"data": paymentMethods,
+	})
+}
+
+func (eh *ExpenseHandler) HandleCreateExpense(w http.ResponseWriter, r *http.Request) {
+	var expense store.Expense
+
+	err := utils.ReadRequestBody(r, &expense)
+	if err != nil {
+		eh.logger.Printf("ERROR: decoding create expense request body: %v", err)
+		utils.WriteJSONResponse(w, http.StatusBadRequest, utils.Envelope{"error": "invalid request body"})
+		return
+	}
+
+	createdExpense, err := eh.expenseStore.CreateExpense(&expense)
+	if err != nil {
+		eh.logger.Printf("ERROR: CreateExpense: %v", err)
+		utils.WriteJSONResponse(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})
+		return
+	}
+
+	utils.WriteJSONResponse(w, http.StatusCreated, utils.Envelope{
+		"data": createdExpense,
+	})
+}
+
+func (eh *ExpenseHandler) HandleGetAllExpenses(w http.ResponseWriter, r *http.Request) {
+	// For simplicity, we are using a hardcoded user ID.
+	// In a real application, you would get this from the authenticated user context.
+	userID := int64(1)
+
+	expenses, err := eh.expenseStore.ListExpensesByUserID(userID)
+	if err != nil {
+		eh.logger.Printf("ERROR: ListExpensesByUserID: %v", err)
+		utils.WriteJSONResponse(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})
+		return
+	}
+
+	utils.WriteJSONResponse(w, http.StatusOK, utils.Envelope{
+		"data": expenses,
+	})
 }
