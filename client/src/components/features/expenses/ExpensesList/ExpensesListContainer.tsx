@@ -1,23 +1,26 @@
-import { memo, useEffect, useState } from "react";
-import { TExpense, useExpenses } from "@/context/expenses";
+import { memo } from "react";
+import { useExpenses } from "@/context/expenses";
 import { ExpensesList } from ".";
+import { View, ActivityIndicator, Text } from "react-native";
 
 const ExpensesListContainer = memo(() => {
-  const [expenses, setExpenses] = useState<TExpense[]>([]);
+  const { expenses, isLoading, error } = useExpenses();
 
-  useEffect(() => {
-    fetch("http://localhost:8080/expenses", {
-      method: "GET",
-      mode: "cors",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    })
-      .then((res) => res.json())
-      .then(({ data }) => {
-        setExpenses(data);
-      });
-  }, []);
+  if (isLoading) {
+    return (
+      <View className="flex-1 justify-center items-center">
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View className="flex-1 justify-center items-center">
+        <Text className="text-red-500">Error: {error}</Text>
+      </View>
+    );
+  }
 
   return <ExpensesList expenses={expenses} />;
 });

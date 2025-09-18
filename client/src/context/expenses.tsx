@@ -1,67 +1,179 @@
-import { createContext, memo, useCallback, useContext, useEffect, useState } from "react";
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { EXPENSES_LOCAL_STORAGE_KEY } from "@/constants/storage";
+import {
+  createContext,
+  memo,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
+import { expenseApi } from "@/services/api";
 
 interface ExpensesContext {
-	expenses: TExpense[];
-	addExpense: (expense: TExpense) => void;
+  isLoading: boolean;
+  error: string | null;
+  expenses: TExpense[];
+  categories: TCategory[];
+  paymentMethods: TPaymentMethod[];
+  addExpense: (expense: Omit<TExpense, "id">) => Promise<void>;
+  addCategory: (category: Omit<TCategory, "id">) => Promise<void>;
+  addPaymentMethod: (
+    paymentMethod: Omit<TPaymentMethod, "id">
+  ) => Promise<void>;
 }
 
+export type TCategory = {
+  id: number;
+  name: string;
+};
+
+export type TPaymentMethod = {
+  id: number;
+  name: string;
+};
+
 export type TExpense = {
-	name: string;
-	amount: number;
-	category: string;
-	date: string;
+  id: number;
+  userId: number;
+  categoryId: number;
+  paymentMethodId: number;
+  amount: number;
+  expenseDate: string;
+  // Include category and payment method data for UI
+  category?: TCategory;
+  paymentMethod?: TPaymentMethod;
 };
 
 const ExpenseContext = createContext<ExpensesContext>({
-	expenses: [],
-	addExpense: (expense: TExpense) => {},
+  isLoading: false,
+  error: null,
+  expenses: [],
+  categories: [],
+  paymentMethods: [],
+  addExpense: async () => {},
+  addCategory: async () => {},
+  addPaymentMethod: async () => {},
 });
 
-
 const ExpensesProvider = memo(({ children }: { children: React.ReactNode }) => {
-	const [expenses, setExpenses] = useState<TExpense[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [expenses, setExpenses] = useState<TExpense[]>([]);
+  const [categories, setCategories] = useState<TCategory[]>([]);
+  const [paymentMethods, setPaymentMethods] = useState<TPaymentMethod[]>([]);
 
-	const updateExpensesHandler = useCallback((expenses: TExpense[]) => {
-		setExpenses(expenses);
-		AsyncStorage.setItem(EXPENSES_LOCAL_STORAGE_KEY, JSON.stringify(expenses));
-	}, []);
+  const fetchAllData = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const [expensesRes, categoriesRes, paymentMethodsRes] = await Promise.all(
+        [
+          expenseApi.getExpenses(),
+          expenseApi.getCategories(),
+          expenseApi.getPaymentMethods(),
+        ]
+      );
 
-	const addExpense = useCallback((expense: TExpense) => {
-		updateExpensesHandler([...expenses, expense]);
-	},[updateExpensesHandler, expenses]);
+      // Enrich expenses with category and payment method data
+      const enrichedExpenses = expensesRes.map((expense) => ({
+        ...expense,
+        category: categoriesRes.find((cat) => cat.id === expense.categoryId),
+        paymentMethod: paymentMethodsRes.find(
+          (pm) => pm.id === expense.paymentMethodId
+        ),
+      }));
 
-	const setInitialExpenses = useCallback(async () => {
-		const expensesString =await AsyncStorage.getItem(EXPENSES_LOCAL_STORAGE_KEY);
-		if (expensesString !== null) {
-			const expenses = JSON.parse(expensesString);
-			updateExpensesHandler(expenses);
-		}
-	}, [updateExpensesHandler]);
+      setExpenses(enrichedExpenses);
+      setCategories(categoriesRes);
+      setPaymentMethods(paymentMethodsRes);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to fetch data");
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
-	useEffect(() => {
-		setInitialExpenses();
-	}, []);
+  const addExpense = useCallback(
+    async (expense: Omit<TExpense, "id">) => {
+      try {
+        const data = await expenseApi.createExpense(expense);
+        // Enrich the new expense with category and payment method data
+        const enrichedExpense = {
+          ...data,
+          category: categories.find((cat) => cat.id === data.categoryId),
+          paymentMethod: paymentMethods.find(
+            (pm) => pm.id === data.paymentMethodId
+          ),
+        };
+        setExpenses((prev) => [...prev, enrichedExpense]);
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Failed to create expense"
+        );
+        throw err;
+      }
+    },
+    [categories, paymentMethods]
+  );
 
-	return (
-		<ExpenseContext.Provider value={{ expenses, addExpense }}>
-			{children}
-		</ExpenseContext.Provider>
-	);
-})
+  const addCategory = useCallback(async (category: Omit<TCategory, "id">) => {
+    try {
+      const data = await expenseApi.createCategory(category);
+      setCategories((prev) => [...prev, data]);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to create category"
+      );
+      throw err;
+    }
+  }, []);
+
+  const addPaymentMethod = useCallback(
+    async (paymentMethod: Omit<TPaymentMethod, "id">) => {
+      try {
+        const data = await expenseApi.createPaymentMethod(paymentMethod);
+        setPaymentMethods((prev) => [...prev, data]);
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Failed to create payment method"
+        );
+        throw err;
+      }
+    },
+    []
+  );
+
+  useEffect(() => {
+    fetchAllData();
+  }, [fetchAllData]);
+
+  return (
+    <ExpenseContext.Provider
+      value={{
+        isLoading,
+        error,
+        expenses,
+        categories,
+        paymentMethods,
+        addExpense,
+        addCategory,
+        addPaymentMethod,
+      }}
+    >
+      {children}
+    </ExpenseContext.Provider>
+  );
+});
 
 ExpensesProvider.displayName = "ExpensesProvider";
 
 const useExpenses = () => {
-	const context = useContext(ExpenseContext);
+  const context = useContext(ExpenseContext);
 
-	if (!context) {
-		throw new Error("useExpenses must be used within a ExpensesProvider");
-	}
+  if (!context) {
+    throw new Error("useExpenses must be used within a ExpensesProvider");
+  }
 
-	return context;
+  return context;
 };
-
 
 export { ExpensesProvider, useExpenses };

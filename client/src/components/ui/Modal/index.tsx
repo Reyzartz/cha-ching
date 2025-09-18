@@ -26,7 +26,7 @@ const Modal = memo(
           animationType="fade"
           presentationStyle="overFullScreen"
         >
-          <View className="justify-center items-center bg-black bg-opacity-50 p-10">
+          <View className="justify-center items-center bg-black bg-opacity-50 p-10 h-full">
             <View className="rounded-lg overflow-hidden bg-white">
               {children}
             </View>

@@ -1,31 +1,33 @@
 import { memo, useCallback, useState } from "react";
 import { Pressable, View } from "react-native";
 import { useExpenses } from "@/context/expenses";
-import { Modal, Button, Input, Icon } from "@/components/ui";
+import { Modal, Button, Input, Icon, Select } from "@/components/ui";
 
 const AddExpenseModal = memo(() => {
   const [open, setOpen] = useState(false);
-  const { addExpense } = useExpenses();
+  const { addExpense, categories, paymentMethods, isLoading } = useExpenses();
+
   const [form, setForm] = useState({
-    name: "",
     amount: "",
-    category: "",
+    categoryId: 0,
+    paymentMethodId: 0,
   });
 
   const handleSubmit = useCallback(() => {
-    if (!form.name || !form.amount || !form.category) return;
+    if (!form.amount || !form.categoryId || !form.paymentMethodId) return;
 
     addExpense({
-      name: form.name,
+      userId: 1, // Hardcoded for now, should come from auth context
       amount: Number(form.amount),
-      category: form.category,
-      date: new Date().toISOString(),
+      categoryId: form.categoryId,
+      paymentMethodId: form.paymentMethodId,
+      expenseDate: new Date().toISOString(),
     });
 
     setForm({
-      name: "",
       amount: "",
-      category: "",
+      categoryId: 0,
+      paymentMethodId: 0,
     });
 
     setOpen(false);
@@ -35,7 +37,7 @@ const AddExpenseModal = memo(() => {
     setOpen(false);
   }, []);
 
-  const isFormValid = form.name && form.amount && form.category;
+  const isFormValid = form.amount && form.categoryId && form.paymentMethodId;
 
   return (
     <>
@@ -51,13 +53,6 @@ const AddExpenseModal = memo(() => {
         <Modal.Body>
           <View className="gap-4 min-w-96">
             <Input
-              label="Expense Name"
-              placeholder="Enter expense name"
-              value={form.name}
-              onChangeText={(text: string) => setForm({ ...form, name: text })}
-            />
-
-            <Input
               label="Amount"
               placeholder="Enter amount"
               value={form.amount}
@@ -67,12 +62,23 @@ const AddExpenseModal = memo(() => {
               keyboardType="numeric"
             />
 
-            <Input
+            <Select
               label="Category"
-              placeholder="Enter category"
-              value={form.category}
-              onChangeText={(text: string) =>
-                setForm({ ...form, category: text })
+              placeholder="Select a category"
+              value={form.categoryId}
+              items={categories}
+              onChange={(categoryId: number) =>
+                setForm({ ...form, categoryId })
+              }
+            />
+
+            <Select
+              label="Payment Method"
+              placeholder="Select a payment method"
+              value={form.paymentMethodId}
+              items={paymentMethods}
+              onChange={(paymentMethodId: number) =>
+                setForm({ ...form, paymentMethodId })
               }
             />
           </View>
@@ -81,7 +87,7 @@ const AddExpenseModal = memo(() => {
           <Button variant="outline" onPress={handleClose}>
             Cancel
           </Button>
-          <Button onPress={handleSubmit} disabled={!isFormValid}>
+          <Button onPress={handleSubmit} disabled={!isFormValid || isLoading}>
             Add Expense
           </Button>
         </Modal.Footer>

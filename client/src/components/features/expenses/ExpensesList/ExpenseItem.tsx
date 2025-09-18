@@ -9,19 +9,23 @@ export interface ExpenseItemProps {
 
 const ExpenseItem = memo<ExpenseItemProps>(({ expense }) => {
   const dateLabel = useMemo(() => {
-    const date = new Date(expense.date);
+    const date = new Date(expense.expenseDate);
     return new Intl.DateTimeFormat("en-US", {
       month: "short",
       day: "numeric",
     }).format(date);
-  }, [expense.date]);
+  }, [expense.expenseDate]);
 
   return (
     <Card className="w-full" padding="md">
       <View className="flex-row justify-between items-center gap-4">
         <View className="flex-col gap-1 flex-1">
-          <Text className="font-semibold text-gray-900">{expense.name}</Text>
-          <Text className="text-sm text-gray-500">{expense.category}</Text>
+          <Text className="font-semibold text-gray-900">
+            {expense.category?.name || "Unknown Method"}
+          </Text>
+          <Text className="text-sm text-gray-500">
+            {expense.paymentMethod?.name || "Uncategorized"}
+          </Text>
         </View>
 
         <View className="flex-col items-end gap-1">
