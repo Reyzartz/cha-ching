@@ -35,3 +35,4 @@ const CategoriesList = memo<CategoriesListProps>(({ categories }) => {
 CategoriesList.displayName = "CategoriesList";
 
 export { CategoriesList };
+export { CategoriesListContainer } from "./CategoriesListContainer";

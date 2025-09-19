@@ -1,2 +1,2 @@
-export { CategoriesListContainer as CategoriesList } from "./CategoriesListContainer";
+export { CategoriesListContainer as CategoriesList } from "./CategoriesList";
 export { AddCategoryModal } from "./AddCategoryModal";

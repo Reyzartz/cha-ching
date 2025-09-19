@@ -1,4 +1,4 @@
-import { memo, useEffect } from "react";
+import { memo } from "react";
 import { ExpensesList } from ".";
 import { View, ActivityIndicator, Text } from "react-native";
 import { useExpenses } from "@/hooks";

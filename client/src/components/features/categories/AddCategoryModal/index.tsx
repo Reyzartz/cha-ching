@@ -31,7 +31,7 @@ const AddCategoryModal = memo(() => {
     <>
       <Pressable
         onPress={() => setOpen(true)}
-        className="absolute right-4 bottom-4 bg-blue-500 rounded-full p-4 shadow-lg"
+        className="absolute z-10 right-4 bottom-4 bg-blue-500 rounded-full p-4 shadow-lg"
       >
         <Icon name="plus" size={24} color="#fff" />
       </Pressable>

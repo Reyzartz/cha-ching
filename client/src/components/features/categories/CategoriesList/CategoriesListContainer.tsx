@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { View, ActivityIndicator, Text } from "react-native";
 import { useCategories } from "@/hooks";
-import { CategoriesList } from "./CategoriesList";
+import { CategoriesList } from ".";
 
 const CategoriesListContainer = memo(() => {
   const { categories, loading, error } = useCategories();

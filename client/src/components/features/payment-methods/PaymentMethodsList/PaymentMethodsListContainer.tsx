@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { View, ActivityIndicator, Text } from "react-native";
 import { usePaymentMethods } from "@/hooks";
-import { PaymentMethodsList } from "./PaymentMethodsList";
+import { PaymentMethodsList } from ".";
 
 const PaymentMethodsListContainer = memo(() => {
   const { paymentMethods, loading, error } = usePaymentMethods();

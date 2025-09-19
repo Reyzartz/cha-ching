@@ -1,2 +1,2 @@
-export { PaymentMethodsListContainer as PaymentMethodsList } from "./PaymentMethodsListContainer";
+export { PaymentMethodsListContainer as PaymentMethodsList } from "./PaymentMethodsList";
 export { AddPaymentMethodModal } from "./AddPaymentMethodModal";
