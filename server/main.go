@@ -2,36 +2,39 @@ package main
 
 import (
 	"cha-ching-server/internal/app"
+	"cha-ching-server/internal/config"
 	"cha-ching-server/internal/routes"
-	"flag"
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 )
 
 func main() {
-	var port int
+	cfg, err := config.Load()
+	if err != nil {
+		panic(err)
+	}
 
-	flag.IntVar(&port, "port", 8080, "Port to run the server on")
-	flag.Parse()
-
-	app, err := app.NewApplication()
+	app, err := app.NewApplication(cfg)
 	if err != nil {
 		panic(err)
 	}
 
 	defer app.Database.Close()
 
-	app.Logger.Printf("Starting server on port %d", port)
+	port, _ := strconv.Atoi(cfg.Server.Port)
+	app.Logger.Printf("Starting server on %s:%d", cfg.Server.Host, port)
 
-	Start(app, port)
+	Start(app, cfg)
 }
 
-func Start(app *app.Application, port int) {
+func Start(app *app.Application, cfg *config.Config) {
 	r := routes.RegisterRoutes(app)
+	port, _ := strconv.Atoi(cfg.Server.Port)
 
 	server := &http.Server{
-		Addr:         fmt.Sprintf(":%d", port),
+		Addr:         fmt.Sprintf("%s:%d", cfg.Server.Host, port),
 		Handler:      r,
 		IdleTimeout:  time.Minute,
 		ReadTimeout:  30 * time.Second,

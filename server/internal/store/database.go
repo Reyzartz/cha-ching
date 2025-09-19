@@ -1,6 +1,7 @@
 package store
 
 import (
+	"cha-ching-server/internal/config"
 	"database/sql"
 	"fmt"
 	"io/fs"
@@ -9,8 +10,16 @@ import (
 	"github.com/pressly/goose/v3"
 )
 
-func Open() (*sql.DB, error) {
-	db, err := sql.Open("pgx", "host=localhost user=expense_tracker password=expense_tracker dbname=expense_tracker port=5432 sslmode=disable")
+func Open(cfg *config.Config) (*sql.DB, error) {
+	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable",
+		cfg.Database.Host,
+		cfg.Database.User,
+		cfg.Database.Password,
+		cfg.Database.DBName,
+		cfg.Database.Port,
+	)
+
+	db, err := sql.Open("pgx", dsn)
 	if err != nil {
 		return nil, err
 	}

@@ -5,7 +5,7 @@ import {
   IPaymentMethodAPIData,
 } from "@/types/api";
 
-const API_URL = "https://weak-schools-swim.loca.lt"; // Updated to match server port
+const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
 interface ServerResponse<T> {
   data: T;

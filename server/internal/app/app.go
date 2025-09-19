@@ -2,6 +2,7 @@ package app
 
 import (
 	"cha-ching-server/internal/api"
+	"cha-ching-server/internal/config"
 	"cha-ching-server/internal/migrations"
 	"cha-ching-server/internal/store"
 	"database/sql"
@@ -17,8 +18,8 @@ type Application struct {
 	Database       *sql.DB
 }
 
-func NewApplication() (*Application, error) {
-	db, err := store.Open()
+func NewApplication(cfg *config.Config) (*Application, error) {
+	db, err := store.Open(cfg)
 	if err != nil {
 		return nil, err
 	}
