@@ -1,14 +1,14 @@
-import { AddExpenseModal, ExpensesList, AppHeader } from "@/components";
+import { AppHeader, CategoriesList, AddCategoryModal } from "@/components";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-export default function Index() {
+export default function Categories() {
   return (
     <SafeAreaView className="flex-1 items-center">
       <AppHeader />
 
-      <AddExpenseModal />
+      <CategoriesList />
 
-      <ExpensesList />
+      <AddCategoryModal />
     </SafeAreaView>
   );
 }
