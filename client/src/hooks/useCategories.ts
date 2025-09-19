@@ -1,8 +1,9 @@
-import { useState, useCallback } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   categoryService,
   ICreateCategoryPayload,
 } from "@/services/api/category";
+import { queryKeys } from "@/constants/queryKeys";
 
 export interface ICategory {
   id: number;
@@ -10,54 +11,32 @@ export interface ICategory {
 }
 
 export function useCategories() {
-  const [categories, setCategories] = useState<ICategory[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
+  const queryClient = useQueryClient();
 
-  const fetchCategories = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
+  const {
+    data: categories = [],
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: queryKeys.categories,
+    queryFn: () => categoryService.getCategories(),
+  });
 
-      const data = await categoryService.getCategories();
-
-      setCategories(data);
-    } catch (err) {
-      setError(
-        err instanceof Error ? err : new Error("Failed to fetch categories")
+  const { mutateAsync: createCategory } = useMutation({
+    mutationFn: (category: ICreateCategoryPayload) =>
+      categoryService.createCategory(category),
+    onSuccess: (newCategory) => {
+      queryClient.setQueryData<ICategory[]>(
+        queryKeys.categories,
+        (oldData = []) => [...oldData, newCategory]
       );
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const createCategory = useCallback(
-    async (category: ICreateCategoryPayload) => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const newCategory = await categoryService.createCategory(category);
-
-        setCategories((prev) => [...prev, newCategory]);
-        return newCategory;
-      } catch (err) {
-        setError(
-          err instanceof Error ? err : new Error("Failed to create category")
-        );
-        throw err;
-      } finally {
-        setLoading(false);
-      }
     },
-    []
-  );
+  });
 
   return {
     categories,
-    loading,
+    loading: isLoading,
     error,
-    fetchCategories,
     createCategory,
   };
 }

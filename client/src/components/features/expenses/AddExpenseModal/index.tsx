@@ -5,14 +5,9 @@ import { useCategories, useExpenses, usePaymentMethods } from "@/hooks";
 
 const AddExpenseModal = memo(() => {
   const [open, setOpen] = useState(false);
-  const { categories, fetchCategories } = useCategories();
-  const { paymentMethods, fetchPaymentMethods } = usePaymentMethods();
+  const { categories } = useCategories();
+  const { paymentMethods } = usePaymentMethods();
   const { createExpense, loading } = useExpenses();
-
-  useEffect(() => {
-    fetchCategories();
-    fetchPaymentMethods();
-  }, [fetchCategories, fetchPaymentMethods]);
 
   const [form, setForm] = useState({
     amount: "",

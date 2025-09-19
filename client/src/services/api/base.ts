@@ -1,3 +1,4 @@
+import { config } from "@/config";
 import axios, { AxiosInstance, AxiosResponse } from "axios";
 
 interface ServerResponse<T> {
@@ -10,7 +11,7 @@ export class ApiClient {
 
   constructor() {
     this.client = axios.create({
-      baseURL: process.env.EXPO_PUBLIC_API_URL,
+      baseURL: config.api.baseUrl,
       headers: {
         "Content-Type": "application/json",
       },

@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   expenseService,
   ICreateExpensePayload,
@@ -6,6 +6,7 @@ import {
 } from "@/services/api/expense";
 import { ICategory } from "./useCategories";
 import { IPaymentMethod } from "./usePaymentMethods";
+import { queryKeys } from "@/constants/queryKeys";
 
 export interface IExpense {
   id: number;
@@ -34,53 +35,37 @@ function mapExpenseData(data: IExpenseAPIData): IExpense {
 }
 
 export function useExpenses() {
-  const [expenses, setExpenses] = useState<IExpense[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
+  const queryClient = useQueryClient();
 
-  const fetchExpenses = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
+  const {
+    data: expenses = [],
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: queryKeys.expenses,
+    queryFn: async () => {
       const data = await expenseService.getExpenses();
+      return data.map(mapExpenseData);
+    },
+  });
 
-      setExpenses(data.map(mapExpenseData));
-    } catch (err) {
-      setError(
-        err instanceof Error ? err : new Error("Failed to fetch expenses")
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const createExpense = useCallback(async (expense: ICreateExpensePayload) => {
-    try {
-      setLoading(true);
-      setError(null);
-
+  const { mutateAsync: createExpense } = useMutation({
+    mutationFn: async (expense: ICreateExpensePayload) => {
       const newExpense = await expenseService.createExpense(expense);
-
-      setExpenses((prev) => [...prev, mapExpenseData(newExpense)]);
-      return newExpense;
-    } catch (err) {
-      setError(
-        err instanceof Error ? err : new Error("Failed to create expense")
+      return mapExpenseData(newExpense);
+    },
+    onSuccess: (newExpense) => {
+      queryClient.setQueryData<IExpense[]>(
+        queryKeys.expenses,
+        (oldData = []) => [newExpense, ...oldData]
       );
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  console.log("Expenses:", expenses);
+    },
+  });
 
   return {
     expenses,
-    loading,
+    loading: isLoading,
     error,
-    fetchExpenses,
     createExpense,
   };
 }

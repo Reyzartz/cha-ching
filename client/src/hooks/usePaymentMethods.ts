@@ -1,6 +1,7 @@
-import { useState, useCallback } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { paymentMethodService } from "@/services/api/payment-method";
 import { ICreatePaymentMethodPayload } from "@/services/api";
+import { queryKeys } from "@/constants/queryKeys";
 
 export interface IPaymentMethod {
   id: number;
@@ -8,57 +9,32 @@ export interface IPaymentMethod {
 }
 
 export function usePaymentMethods() {
-  const [paymentMethods, setPaymentMethods] = useState<IPaymentMethod[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
+  const queryClient = useQueryClient();
 
-  const fetchPaymentMethods = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
+  const {
+    data: paymentMethods = [],
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: queryKeys.paymentMethods,
+    queryFn: () => paymentMethodService.getPaymentMethods(),
+  });
 
-      const data = await paymentMethodService.getPaymentMethods();
-
-      setPaymentMethods(data);
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err
-          : new Error("Failed to fetch payment methods")
+  const { mutateAsync: createPaymentMethod } = useMutation({
+    mutationFn: (paymentMethod: ICreatePaymentMethodPayload) =>
+      paymentMethodService.createPaymentMethod(paymentMethod),
+    onSuccess: (newPaymentMethod) => {
+      queryClient.setQueryData<IPaymentMethod[]>(
+        queryKeys.paymentMethods,
+        (oldData = []) => [...oldData, newPaymentMethod]
       );
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const createPaymentMethod = useCallback(
-    async (paymentMethod: ICreatePaymentMethodPayload) => {
-      try {
-        setLoading(true);
-        setError(null);
-        const newPaymentMethod =
-          await paymentMethodService.createPaymentMethod(paymentMethod);
-        setPaymentMethods((prev) => [...prev, newPaymentMethod]);
-        return newPaymentMethod;
-      } catch (err) {
-        setError(
-          err instanceof Error
-            ? err
-            : new Error("Failed to create payment method")
-        );
-        throw err;
-      } finally {
-        setLoading(false);
-      }
     },
-    []
-  );
+  });
 
   return {
     paymentMethods,
-    loading,
+    loading: isLoading,
     error,
-    fetchPaymentMethods,
     createPaymentMethod,
   };
 }

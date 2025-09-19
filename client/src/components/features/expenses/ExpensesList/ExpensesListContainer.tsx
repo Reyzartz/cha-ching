@@ -4,11 +4,7 @@ import { View, ActivityIndicator, Text } from "react-native";
 import { useExpenses } from "@/hooks";
 
 const ExpensesListContainer = memo(() => {
-  const { expenses, fetchExpenses, loading, error } = useExpenses();
-
-  useEffect(() => {
-    fetchExpenses();
-  }, [fetchExpenses]);
+  const { expenses, loading, error } = useExpenses();
 
   if (loading) {
     return (
