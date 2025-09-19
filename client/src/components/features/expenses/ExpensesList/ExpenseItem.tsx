@@ -1,10 +1,10 @@
 import { memo, useMemo } from "react";
 import { Text, View } from "react-native";
-import { TExpense } from "@/context/expenses";
 import { Card } from "@/components/ui";
+import { IExpense } from "@/hooks";
 
 export interface ExpenseItemProps {
-  expense: TExpense;
+  expense: IExpense;
 }
 
 const ExpenseItem = memo<ExpenseItemProps>(({ expense }) => {
@@ -21,10 +21,11 @@ const ExpenseItem = memo<ExpenseItemProps>(({ expense }) => {
       <View className="flex-row justify-between items-center gap-4">
         <View className="flex-col gap-1 flex-1">
           <Text className="font-semibold text-gray-900">
-            {expense.category?.name || "Unknown Method"}
+            {expense.category.name}
           </Text>
+
           <Text className="text-sm text-gray-500">
-            {expense.paymentMethod?.name || "Uncategorized"}
+            {expense.paymentMethod.name}
           </Text>
         </View>
 

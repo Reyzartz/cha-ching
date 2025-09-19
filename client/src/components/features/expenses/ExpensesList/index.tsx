@@ -1,11 +1,11 @@
 import { memo } from "react";
-import { View, Text } from "react-native";
-import { TExpense } from "@/context/expenses";
+import { View, Text, FlatList } from "react-native";
 import { Card } from "@/components/ui";
 import { ExpenseItem } from "./ExpenseItem";
+import { IExpense } from "@/hooks";
 
 export interface ExpensesListProps {
-  expenses: TExpense[];
+  expenses: IExpense[];
 }
 
 const ExpensesList = memo<ExpensesListProps>(({ expenses }) => {
@@ -21,11 +21,14 @@ const ExpensesList = memo<ExpensesListProps>(({ expenses }) => {
   }
 
   return (
-    <View className="flex-1 gap-2 p-4 w-full max-w-2xl">
-      {expenses.map((expense, index) => (
-        <ExpenseItem key={`${expense.name}-${index}`} expense={expense} />
-      ))}
-    </View>
+    <FlatList
+      className="flex-1 w-full max-w-2xl px-4"
+      data={expenses}
+      renderItem={({ item }) => <ExpenseItem expense={item} />}
+      keyExtractor={(item) => item.id.toString()}
+      ItemSeparatorComponent={() => <View className="h-2" />}
+      contentContainerStyle={{ paddingVertical: 16 }}
+    />
   );
 });
 

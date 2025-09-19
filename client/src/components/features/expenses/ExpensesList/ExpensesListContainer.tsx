@@ -1,12 +1,16 @@
-import { memo } from "react";
-import { useExpenses } from "@/context/expenses";
+import { memo, useEffect } from "react";
 import { ExpensesList } from ".";
 import { View, ActivityIndicator, Text } from "react-native";
+import { useExpenses } from "@/hooks";
 
 const ExpensesListContainer = memo(() => {
-  const { expenses, isLoading, error } = useExpenses();
+  const { expenses, fetchExpenses, loading, error } = useExpenses();
 
-  if (isLoading) {
+  useEffect(() => {
+    fetchExpenses();
+  }, [fetchExpenses]);
+
+  if (loading) {
     return (
       <View className="flex-1 justify-center items-center">
         <ActivityIndicator size="large" />
@@ -17,7 +21,7 @@ const ExpensesListContainer = memo(() => {
   if (error) {
     return (
       <View className="flex-1 justify-center items-center">
-        <Text className="text-red-500">Error: {error}</Text>
+        <Text className="text-red-500">Error: {error.message}</Text>
       </View>
     );
   }

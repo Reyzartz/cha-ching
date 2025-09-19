@@ -1,11 +1,18 @@
-import { memo, useCallback, useState } from "react";
+import { memo, useCallback, useEffect, useState } from "react";
 import { Pressable, View } from "react-native";
-import { useExpenses } from "@/context/expenses";
 import { Modal, Button, Input, Icon, Select } from "@/components/ui";
+import { useCategories, useExpenses, usePaymentMethods } from "@/hooks";
 
 const AddExpenseModal = memo(() => {
   const [open, setOpen] = useState(false);
-  const { addExpense, categories, paymentMethods, isLoading } = useExpenses();
+  const { categories, fetchCategories } = useCategories();
+  const { paymentMethods, fetchPaymentMethods } = usePaymentMethods();
+  const { createExpense, loading } = useExpenses();
+
+  useEffect(() => {
+    fetchCategories();
+    fetchPaymentMethods();
+  }, [fetchCategories, fetchPaymentMethods]);
 
   const [form, setForm] = useState({
     amount: "",
@@ -16,7 +23,7 @@ const AddExpenseModal = memo(() => {
   const handleSubmit = useCallback(() => {
     if (!form.amount || !form.categoryId || !form.paymentMethodId) return;
 
-    addExpense({
+    createExpense({
       userId: 1, // Hardcoded for now, should come from auth context
       amount: Number(form.amount),
       categoryId: form.categoryId,
@@ -31,7 +38,7 @@ const AddExpenseModal = memo(() => {
     });
 
     setOpen(false);
-  }, [form, addExpense]);
+  }, [form, createExpense]);
 
   const handleClose = useCallback(() => {
     setOpen(false);
@@ -87,7 +94,7 @@ const AddExpenseModal = memo(() => {
           <Button variant="outline" onPress={handleClose}>
             Cancel
           </Button>
-          <Button onPress={handleSubmit} disabled={!isFormValid || isLoading}>
+          <Button onPress={handleSubmit} disabled={!isFormValid || loading}>
             Add Expense
           </Button>
         </Modal.Footer>
