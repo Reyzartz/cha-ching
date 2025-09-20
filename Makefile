@@ -9,12 +9,16 @@ ifneq (,$(wildcard ./.env.development.local))
 start-client:
 	cd client && bun start
 
+# Start the client application
+start-android:
+	cd client && bun android
+
 # Start the server application
 start-server:
 	cd server && go run main.go
 
 # Start the server in development mode with auto-reload
-dev-server:
+start-dev-server:
 	cd server && reflex -r '\.go$$' -s -- sh -c "go run main.go"
 
 # Start both client and server concurrently

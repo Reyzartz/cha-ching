@@ -42,4 +42,6 @@ yarn-error.*
 database
 
 
-app-example
+# settings
+.vscode/
+/.gitignore
