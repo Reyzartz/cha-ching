@@ -62,76 +62,9 @@ func (eh *ExpenseHandler) HandleGetUser(w http.ResponseWriter, r *http.Request) 
 	})
 }
 
-func (eh *ExpenseHandler) HandleCreateCategory(w http.ResponseWriter, r *http.Request) {
-	var category store.Category
 
-	err := utils.ReadRequestBody(r, &category)
-	if err != nil {
-		eh.logger.Printf("ERROR: decoding create category request body: %v", err)
-		utils.WriteJSONResponse(w, http.StatusBadRequest, utils.Envelope{"error": "invalid request body"})
-		return
-	}
 
-	createdCategory, err := eh.expenseStore.CreateCategory(&category)
-	if err != nil {
-		eh.logger.Printf("ERROR: CreateCategory: %v", err)
-		utils.WriteJSONResponse(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})
-		return
-	}
 
-	utils.WriteJSONResponse(w, http.StatusCreated, utils.Envelope{
-		"data": createdCategory,
-	})
-}
-
-func (eh *ExpenseHandler) HandleGetAllCategories(w http.ResponseWriter, r *http.Request) {
-	categories, err := eh.expenseStore.ListCategories()
-
-	if err != nil {
-		eh.logger.Printf("ERROR: ListCategories: %v", err)
-		utils.WriteJSONResponse(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})
-		return
-	}
-
-	utils.WriteJSONResponse(w, http.StatusOK, utils.Envelope{
-		"data": categories,
-	})
-}
-
-func (eh *ExpenseHandler) HandleCreatePaymentMethod(w http.ResponseWriter, r *http.Request) {
-	var paymentMethod store.PaymentMethod
-
-	err := utils.ReadRequestBody(r, &paymentMethod)
-	if err != nil {
-		eh.logger.Printf("ERROR: decoding create payment method request body: %v", err)
-		utils.WriteJSONResponse(w, http.StatusBadRequest, utils.Envelope{"error": "invalid request body"})
-		return
-	}
-
-	createdPaymentMethod, err := eh.expenseStore.CreatePaymentMethod(&paymentMethod)
-	if err != nil {
-		eh.logger.Printf("ERROR: CreatePaymentMethod: %v", err)
-		utils.WriteJSONResponse(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})
-		return
-	}
-
-	utils.WriteJSONResponse(w, http.StatusCreated, utils.Envelope{
-		"data": createdPaymentMethod,
-	})
-}
-
-func (eh *ExpenseHandler) HandleGetAllPaymentMethods(w http.ResponseWriter, r *http.Request) {
-	paymentMethods, err := eh.expenseStore.ListPaymentMethods()
-	if err != nil {
-		eh.logger.Printf("ERROR: ListPaymentMethods: %v", err)
-		utils.WriteJSONResponse(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})
-		return
-	}
-
-	utils.WriteJSONResponse(w, http.StatusOK, utils.Envelope{
-		"data": paymentMethods,
-	})
-}
 
 func (eh *ExpenseHandler) HandleCreateExpense(w http.ResponseWriter, r *http.Request) {
 	var expense store.Expense

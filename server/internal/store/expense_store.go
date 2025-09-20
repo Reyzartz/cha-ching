@@ -19,16 +19,6 @@ type Expense struct {
 	ExpenseDate     string  `json:"expense_date"`
 }
 
-type Category struct {
-	ID   int    `json:"id"`
-	Name string `json:"name"`
-}
-
-type PaymentMethod struct {
-	ID   int    `json:"id"`
-	Name string `json:"name"`
-}
-
 type ExpenseRelatedItems struct {
 	Categories     map[int]*Category      `json:"categories"`
 	PaymentMethods map[int]*PaymentMethod `json:"payment_methods"`
@@ -48,27 +38,10 @@ type ExpenseStore interface {
 	// User methods
 	CreateUser(user *User) (*User, error)
 	GetUserByID(id int64) (*User, error)
-	// UpdateUser(user *User) error
-	// DeleteUser(id int64) error
 
 	// // Expense methods
 	CreateExpense(expense *Expense) (*Expense, error)
-	// GetExpenseByID(id int64) (*Expense, error)
-	// UpdateExpense(expense *Expense) error
-	// DeleteExpense(id int64) error
 	ListExpensesByUserID(userID int64) ([]*Expense, *ExpenseRelatedItems, error)
-
-	// // Category methods
-	CreateCategory(category *Category) (*Category, error)
-	// UpdateCategory(category *Category) error
-	// DeleteCategory(id int64) error
-	ListCategories() ([]*Category, error)
-
-	// // PaymentMethod methods
-	CreatePaymentMethod(paymentMethod *PaymentMethod) (*PaymentMethod, error)
-	// UpdatePaymentMethod(paymentMethod *PaymentMethod) error
-	// DeletePaymentMethod(id int64) error
-	ListPaymentMethods() ([]*PaymentMethod, error)
 }
 
 func (pg *PostgresExpenseStore) CreateUser(user *User) (*User, error) {
@@ -102,14 +75,9 @@ func (pg *PostgresExpenseStore) GetUserByID(id int64) (*User, error) {
 	user := &User{}
 
 	query := `
-		SELECT
-		    id,
-		    name,
-		    email
-		FROM
-		    users
-		WHERE
-		    id = $1`
+		SELECT u.id, u.name, u.email
+		FROM users u
+		WHERE u.id = $1`
 
 	err := pg.db.QueryRow(query, id).Scan(
 		&user.ID,
@@ -124,128 +92,6 @@ func (pg *PostgresExpenseStore) GetUserByID(id int64) (*User, error) {
 	}
 
 	return user, nil
-}
-
-func (pg *PostgresExpenseStore) CreateCategory(category *Category) (*Category, error) {
-	tx, err := pg.db.Begin()
-	if err != nil {
-		return nil, err
-	}
-
-	defer tx.Rollback()
-
-	query := `
-		INSERT INTO categories (name)
-		    VALUES ($1)
-		RETURNING
-		    id`
-
-	err = tx.QueryRow(query, category.Name).Scan(&category.ID)
-	if err != nil {
-		return nil, err
-	}
-
-	err = tx.Commit()
-	if err != nil {
-		return nil, err
-	}
-
-	return category, nil
-}
-
-func (pg *PostgresExpenseStore) ListCategories() ([]*Category, error) {
-	categories := []*Category{}
-
-	query := `
-		SELECT
-		    id,
-		    name
-		FROM
-		    categories
-		ORDER BY
-		    id`
-	rows, err := pg.db.Query(query)
-	if err != nil {
-		return nil, err
-	}
-
-	defer rows.Close()
-
-	for rows.Next() {
-		var category Category
-		err := rows.Scan(&category.ID, &category.Name)
-		if err != nil {
-			return nil, err
-		}
-		categories = append(categories, &category)
-	}
-
-	if err = rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return categories, nil
-}
-
-func (pg *PostgresExpenseStore) CreatePaymentMethod(paymentMethod *PaymentMethod) (*PaymentMethod, error) {
-	tx, err := pg.db.Begin()
-	if err != nil {
-		return nil, err
-	}
-
-	defer tx.Rollback()
-
-	query := `
-		INSERT INTO payment_methods (name)
-		    VALUES ($1)
-		RETURNING
-		    id`
-
-	err = tx.QueryRow(query, paymentMethod.Name).Scan(&paymentMethod.ID)
-	if err != nil {
-		return nil, err
-	}
-
-	err = tx.Commit()
-	if err != nil {
-		return nil, err
-	}
-
-	return paymentMethod, nil
-}
-
-func (pg *PostgresExpenseStore) ListPaymentMethods() ([]*PaymentMethod, error) {
-	paymentMethods := []*PaymentMethod{}
-
-	query := `
-		SELECT
-		    id,
-		    name
-		FROM
-		    payment_methods
-		ORDER BY
-		    id`
-	rows, err := pg.db.Query(query)
-	if err != nil {
-		return nil, err
-	}
-
-	defer rows.Close()
-
-	for rows.Next() {
-		var paymentMethod PaymentMethod
-		err := rows.Scan(&paymentMethod.ID, &paymentMethod.Name)
-		if err != nil {
-			return nil, err
-		}
-		paymentMethods = append(paymentMethods, &paymentMethod)
-	}
-
-	if err = rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return paymentMethods, nil
 }
 
 func (pg *PostgresExpenseStore) CreateExpense(expense *Expense) (*Expense, error) {

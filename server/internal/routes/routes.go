@@ -28,12 +28,12 @@ func RegisterRoutes(app *app.Application) *chi.Mux {
 	r.Get("/users/{id}", app.ExpenseHandler.HandleGetUser)
 
 	// Category endpoints
-	r.Post("/categories", app.ExpenseHandler.HandleCreateCategory)
-	r.Get("/categories", app.ExpenseHandler.HandleGetAllCategories)
+	r.Post("/categories", app.CategoryHandler.HandleCreateCategory)
+	r.Get("/categories", app.CategoryHandler.HandleGetAllCategories)
 
 	// Payment method endpoints
-	r.Post("/payment-methods", app.ExpenseHandler.HandleCreatePaymentMethod)
-	r.Get("/payment-methods", app.ExpenseHandler.HandleGetAllPaymentMethods)
+	r.Post("/payment-methods", app.PaymentMethodHandler.HandleCreatePaymentMethod)
+	r.Get("/payment-methods", app.PaymentMethodHandler.HandleGetAllPaymentMethods)
 
 	// Expense endpoints
 	r.Post("/expenses", app.ExpenseHandler.HandleCreateExpense)

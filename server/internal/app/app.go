@@ -13,9 +13,11 @@ import (
 )
 
 type Application struct {
-	Logger         *log.Logger
-	ExpenseHandler *api.ExpenseHandler
-	Database       *sql.DB
+	Logger               *log.Logger
+	ExpenseHandler       *api.ExpenseHandler
+	CategoryHandler      *api.CategoryHandler
+	PaymentMethodHandler *api.PaymentMethodHandler
+	Database             *sql.DB
 }
 
 func NewApplication(cfg *config.Config) (*Application, error) {
@@ -31,14 +33,20 @@ func NewApplication(cfg *config.Config) (*Application, error) {
 
 	logger := log.New(os.Stdout, "INFO: ", log.LstdFlags)
 
-	store := store.NewPostgresExpenseStore(db)
+	expenseStore := store.NewPostgresExpenseStore(db)
+	categoryStore := store.NewPostgresCategoryStore(db)
+	paymentMethodStore := store.NewPostgresPaymentMethodStore(db)
 
-	expenseHandler := api.NewExpenseHandler(logger, store)
+	expenseHandler := api.NewExpenseHandler(logger, expenseStore)
+	categoryHandler := api.NewCategoryHandler(logger, categoryStore)
+	paymentMethodHandler := api.NewPaymentMethodHandler(logger, paymentMethodStore)
 
 	app := &Application{
-		Logger:         logger,
-		ExpenseHandler: expenseHandler,
-		Database:       db,
+		Logger:               logger,
+		ExpenseHandler:       expenseHandler,
+		CategoryHandler:      categoryHandler,
+		PaymentMethodHandler: paymentMethodHandler,
+		Database:             db,
 	}
 
 	return app, nil
