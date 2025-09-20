@@ -1,4 +1,4 @@
-import { ApiClient } from "./base";
+import { ApiClient, IServerResponse } from "./base";
 
 export interface ICategoryAPIData {
   id: number;
@@ -10,13 +10,13 @@ export interface ICreateCategoryPayload {
 }
 
 export class CategoryService extends ApiClient {
-  async getCategories(): Promise<ICategoryAPIData[]> {
+  async getCategories(): Promise<IServerResponse<ICategoryAPIData[]>> {
     return this.get<ICategoryAPIData[]>("/categories");
   }
 
   async createCategory(
     category: ICreateCategoryPayload
-  ): Promise<ICategoryAPIData> {
+  ): Promise<IServerResponse<ICategoryAPIData>> {
     return this.post<ICategoryAPIData>("/categories", category);
   }
 }

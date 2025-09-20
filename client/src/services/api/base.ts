@@ -1,9 +1,16 @@
 import { config } from "@/config";
 import axios, { AxiosInstance, AxiosResponse } from "axios";
 
-interface ServerResponse<T> {
+export interface IRelatedItems {
+  [key: string]: {
+    [key: number]: Record<string, any>;
+  };
+}
+
+export interface IServerResponse<T, R extends IRelatedItems = IRelatedItems> {
   data: T;
   error?: string;
+  related_items?: R;
 }
 
 export class ApiClient {
@@ -18,7 +25,7 @@ export class ApiClient {
     });
 
     this.client.interceptors.response.use(
-      (response: AxiosResponse<ServerResponse<any>>) => {
+      (response: AxiosResponse<IServerResponse<any>>) => {
         const serverResponse = response.data;
         if (!ApiClient.isSuccessResponse(response)) {
           return Promise.reject(new Error(serverResponse.error));
@@ -34,25 +41,29 @@ export class ApiClient {
   }
 
   static isSuccessResponse(
-    response: AxiosResponse<ServerResponse<any>>
+    response: AxiosResponse<IServerResponse<any>>
   ): boolean {
     return (
       response.status >= 200 && response.status < 300 && !response.data.error
     );
   }
 
-  protected async get<T>(endpoint: string): Promise<T> {
-    const {
-      data: { data },
-    } = await this.client.get<ServerResponse<T>>(endpoint);
+  protected async get<T, R extends IRelatedItems = IRelatedItems>(
+    endpoint: string
+  ): Promise<IServerResponse<T, R>> {
+    const { data } = await this.client.get<IServerResponse<T, R>>(endpoint);
 
     return data;
   }
 
-  protected async post<T>(endpoint: string, payload: any): Promise<T> {
-    const {
-      data: { data },
-    } = await this.client.post<ServerResponse<T>>(endpoint, payload);
+  protected async post<T, R extends IRelatedItems = IRelatedItems>(
+    endpoint: string,
+    payload: any
+  ): Promise<IServerResponse<T, R>> {
+    const { data } = await this.client.post<IServerResponse<T, R>>(
+      endpoint,
+      payload
+    );
 
     return data;
   }

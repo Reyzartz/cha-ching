@@ -86,6 +86,7 @@ func (eh *ExpenseHandler) HandleCreateCategory(w http.ResponseWriter, r *http.Re
 
 func (eh *ExpenseHandler) HandleGetAllCategories(w http.ResponseWriter, r *http.Request) {
 	categories, err := eh.expenseStore.ListCategories()
+
 	if err != nil {
 		eh.logger.Printf("ERROR: ListCategories: %v", err)
 		utils.WriteJSONResponse(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})
@@ -159,7 +160,7 @@ func (eh *ExpenseHandler) HandleGetAllExpenses(w http.ResponseWriter, r *http.Re
 	// In a real application, you would get this from the authenticated user context.
 	userID := int64(1)
 
-	expenses, err := eh.expenseStore.ListExpensesByUserID(userID)
+	expenses, relatedItems, err := eh.expenseStore.ListExpensesByUserID(userID)
 	if err != nil {
 		eh.logger.Printf("ERROR: ListExpensesByUserID: %v", err)
 		utils.WriteJSONResponse(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})
@@ -167,6 +168,7 @@ func (eh *ExpenseHandler) HandleGetAllExpenses(w http.ResponseWriter, r *http.Re
 	}
 
 	utils.WriteJSONResponse(w, http.StatusOK, utils.Envelope{
-		"data": expenses,
+		"data":          expenses,
+		"related_items": relatedItems,
 	})
 }

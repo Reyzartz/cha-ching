@@ -29,6 +29,11 @@ type PaymentMethod struct {
 	Name string `json:"name"`
 }
 
+type ExpenseRelatedItems struct {
+	Categories     map[int]*Category      `json:"categories"`
+	PaymentMethods map[int]*PaymentMethod `json:"payment_methods"`
+}
+
 type PostgresExpenseStore struct {
 	db *sql.DB
 }
@@ -51,7 +56,7 @@ type ExpenseStore interface {
 	// GetExpenseByID(id int64) (*Expense, error)
 	// UpdateExpense(expense *Expense) error
 	// DeleteExpense(id int64) error
-	ListExpensesByUserID(userID int64) ([]*Expense, error)
+	ListExpensesByUserID(userID int64) ([]*Expense, *ExpenseRelatedItems, error)
 
 	// // Category methods
 	CreateCategory(category *Category) (*Category, error)
@@ -75,9 +80,10 @@ func (pg *PostgresExpenseStore) CreateUser(user *User) (*User, error) {
 	defer tx.Rollback()
 
 	query := `
-	INSERT INTO users (name, email) 
-	VALUES ($1, $2) 
-	RETURNING id`
+		INSERT INTO users (name, email)
+		    VALUES ($1, $2)
+		RETURNING
+		    id`
 
 	err = tx.QueryRow(query, user.Name, user.Email).Scan(&user.ID)
 	if err != nil {
@@ -96,10 +102,14 @@ func (pg *PostgresExpenseStore) GetUserByID(id int64) (*User, error) {
 	user := &User{}
 
 	query := `
-	SELECT id, name, email
-	FROM users
-	WHERE id = $1
-	`
+		SELECT
+		    id,
+		    name,
+		    email
+		FROM
+		    users
+		WHERE
+		    id = $1`
 
 	err := pg.db.QueryRow(query, id).Scan(
 		&user.ID,
@@ -125,9 +135,10 @@ func (pg *PostgresExpenseStore) CreateCategory(category *Category) (*Category, e
 	defer tx.Rollback()
 
 	query := `
-	INSERT INTO categories (name) 
-	VALUES ($1) 
-	RETURNING id`
+		INSERT INTO categories (name)
+		    VALUES ($1)
+		RETURNING
+		    id`
 
 	err = tx.QueryRow(query, category.Name).Scan(&category.ID)
 	if err != nil {
@@ -146,10 +157,13 @@ func (pg *PostgresExpenseStore) ListCategories() ([]*Category, error) {
 	categories := []*Category{}
 
 	query := `
-	SELECT id, name
-	FROM categories
-	ORDER BY id
-	`
+		SELECT
+		    id,
+		    name
+		FROM
+		    categories
+		ORDER BY
+		    id`
 	rows, err := pg.db.Query(query)
 	if err != nil {
 		return nil, err
@@ -182,9 +196,10 @@ func (pg *PostgresExpenseStore) CreatePaymentMethod(paymentMethod *PaymentMethod
 	defer tx.Rollback()
 
 	query := `
-	INSERT INTO payment_methods (name) 
-	VALUES ($1) 
-	RETURNING id`
+		INSERT INTO payment_methods (name)
+		    VALUES ($1)
+		RETURNING
+		    id`
 
 	err = tx.QueryRow(query, paymentMethod.Name).Scan(&paymentMethod.ID)
 	if err != nil {
@@ -203,10 +218,13 @@ func (pg *PostgresExpenseStore) ListPaymentMethods() ([]*PaymentMethod, error) {
 	paymentMethods := []*PaymentMethod{}
 
 	query := `
-	SELECT id, name
-	FROM payment_methods
-	ORDER BY id
-	`
+		SELECT
+		    id,
+		    name
+		FROM
+		    payment_methods
+		ORDER BY
+		    id`
 	rows, err := pg.db.Query(query)
 	if err != nil {
 		return nil, err
@@ -239,17 +257,15 @@ func (pg *PostgresExpenseStore) CreateExpense(expense *Expense) (*Expense, error
 	defer tx.Rollback()
 
 	query := `
-	INSERT INTO expenses (
-		user_id,
-		category_id,
-		payment_method_id,
-		amount,
-		expense_date
-	) VALUES ( 
-		$1, $2, $3, $4, $5
-	)
-	RETURNING ID
-	`
+		INSERT INTO expenses (
+			user_id,
+			category_id,
+			payment_method_id,
+			amount,
+			expense_date
+		) VALUES ($1, $2, $3, $4, $5)
+		RETURNING
+		    ID`
 	err = tx.QueryRow(query, expense.UserID, expense.CategoryID, expense.PaymentMethodID, expense.Amount, expense.ExpenseDate).Scan(&expense.ID)
 	if err != nil {
 		return nil, err
@@ -263,24 +279,41 @@ func (pg *PostgresExpenseStore) CreateExpense(expense *Expense) (*Expense, error
 	return expense, nil
 }
 
-func (pg *PostgresExpenseStore) ListExpensesByUserID(userID int64) ([]*Expense, error) {
-	expenses := []*Expense{}
+func (pg *PostgresExpenseStore) ListExpensesByUserID(userID int64) ([]*Expense, *ExpenseRelatedItems, error) {
+
+	var expenses []*Expense
+	var categories = make(map[int]*Category)
+	var paymentMethods = make(map[int]*PaymentMethod)
 
 	query := `
-	SELECT id, user_id, category_id, payment_method_id, amount, expense_date
-	FROM expenses
-	WHERE user_id = $1
-	ORDER BY expense_date DESC
+		SELECT 
+			e.id, 
+			e.user_id, 
+			e.category_id,
+			e.payment_method_id, 
+			e.amount, 
+			e.expense_date,
+			c.id AS category_id,
+			c.name AS category_name,
+			p.id AS payment_method_id,
+			p.name AS payment_method_name
+		FROM expenses e
+		LEFT JOIN categories c ON c.id = e.category_id
+		LEFT JOIN payment_methods p ON p.id = e.payment_method_id
+		WHERE e.user_id = $1
+		ORDER BY e.expense_date DESC;
 	`
 	rows, err := pg.db.Query(query, userID)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	defer rows.Close()
 
 	for rows.Next() {
 		var expense Expense
+		var category Category
+		var paymentMethod PaymentMethod
 		err := rows.Scan(
 			&expense.ID,
 			&expense.UserID,
@@ -288,16 +321,26 @@ func (pg *PostgresExpenseStore) ListExpensesByUserID(userID int64) ([]*Expense, 
 			&expense.PaymentMethodID,
 			&expense.Amount,
 			&expense.ExpenseDate,
+			&category.ID,
+			&category.Name,
+			&paymentMethod.ID,
+			&paymentMethod.Name,
 		)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
+
 		expenses = append(expenses, &expense)
+		categories[category.ID] = &category
+		paymentMethods[paymentMethod.ID] = &paymentMethod
 	}
 
 	if err = rows.Err(); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return expenses, nil
+	return expenses, &ExpenseRelatedItems{
+		Categories:     categories,
+		PaymentMethods: paymentMethods,
+	}, nil
 }

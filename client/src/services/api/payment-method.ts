@@ -1,4 +1,4 @@
-import { ApiClient } from "./base";
+import { ApiClient, IServerResponse } from "./base";
 
 export interface IPaymentMethodAPIData {
   id: number;
@@ -10,13 +10,13 @@ export interface ICreatePaymentMethodPayload {
 }
 
 export class PaymentMethodService extends ApiClient {
-  async getPaymentMethods(): Promise<IPaymentMethodAPIData[]> {
+  async getPaymentMethods(): Promise<IServerResponse<IPaymentMethodAPIData[]>> {
     return this.get<IPaymentMethodAPIData[]>("/payment-methods");
   }
 
   async createPaymentMethod(
     paymentMethod: ICreatePaymentMethodPayload
-  ): Promise<IPaymentMethodAPIData> {
+  ): Promise<IServerResponse<IPaymentMethodAPIData>> {
     return this.post<IPaymentMethodAPIData>("/payment-methods", paymentMethod);
   }
 }

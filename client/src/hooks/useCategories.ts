@@ -20,16 +20,16 @@ export function useCategories() {
   } = useQuery({
     queryKey: queryKeys.categories,
     queryFn: () => categoryService.getCategories(),
+    select: (response) => response.data,
   });
 
   const { mutateAsync: createCategory } = useMutation({
     mutationFn: (category: ICreateCategoryPayload) =>
       categoryService.createCategory(category),
-    onSuccess: (newCategory) => {
-      queryClient.setQueryData<ICategory[]>(
-        queryKeys.categories,
-        (oldData = []) => [...oldData, newCategory]
-      );
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.categories,
+      });
     },
   });
 

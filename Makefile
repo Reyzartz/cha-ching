@@ -13,6 +13,10 @@ start-client:
 start-server:
 	cd server && go run main.go
 
+# Start the server in development mode with auto-reload
+dev-server:
+	cd server && reflex -r '\.go$$' -s -- sh -c "go run main.go"
+
 # Start both client and server concurrently
 start:
 	make start-server & make start-client

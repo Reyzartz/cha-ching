@@ -1,4 +1,6 @@
-import { ApiClient } from "./base";
+import { ApiClient, IRelatedItems, IServerResponse } from "./base";
+import { ICategoryAPIData } from "./category";
+import { IPaymentMethodAPIData } from "./payment-method";
 
 export interface IExpenseAPIData {
   id: number;
@@ -7,6 +9,11 @@ export interface IExpenseAPIData {
   payment_method_id: number;
   amount: number;
   expense_date: string;
+}
+
+export interface IExpenseRelatedItems extends IRelatedItems {
+  categories: { [key: number]: ICategoryAPIData };
+  payment_methods: { [key: number]: IPaymentMethodAPIData };
 }
 
 export interface ICreateExpensePayload {
@@ -18,13 +25,15 @@ export interface ICreateExpensePayload {
 }
 
 export class ExpenseService extends ApiClient {
-  async getExpenses(): Promise<IExpenseAPIData[]> {
-    return this.get<IExpenseAPIData[]>("/expenses");
+  async getExpenses(): Promise<
+    IServerResponse<IExpenseAPIData[], IExpenseRelatedItems>
+  > {
+    return this.get<IExpenseAPIData[], IExpenseRelatedItems>("/expenses");
   }
 
   async createExpense(
     expense: ICreateExpensePayload
-  ): Promise<IExpenseAPIData> {
+  ): Promise<IServerResponse<IExpenseAPIData>> {
     return this.post<IExpenseAPIData>("/expenses", {
       user_id: expense.userId,
       category_id: expense.categoryId,

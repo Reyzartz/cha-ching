@@ -18,16 +18,16 @@ export function usePaymentMethods() {
   } = useQuery({
     queryKey: queryKeys.paymentMethods,
     queryFn: () => paymentMethodService.getPaymentMethods(),
+    select: (response) => response.data,
   });
 
   const { mutateAsync: createPaymentMethod } = useMutation({
     mutationFn: (paymentMethod: ICreatePaymentMethodPayload) =>
       paymentMethodService.createPaymentMethod(paymentMethod),
-    onSuccess: (newPaymentMethod) => {
-      queryClient.setQueryData<IPaymentMethod[]>(
-        queryKeys.paymentMethods,
-        (oldData = []) => [...oldData, newPaymentMethod]
-      );
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.paymentMethods,
+      });
     },
   });
 
