@@ -16,6 +16,7 @@ export interface IExpense {
   paymentMethodId: number;
   category: ICategory | null;
   paymentMethod: IPaymentMethod | null;
+  title: string;
   amount: number;
   expenseDate: string;
 }
@@ -32,6 +33,7 @@ function mapExpenseData(
     category: relatedItems["categories"]?.[data.category_id] ?? null,
     paymentMethod:
       relatedItems["payment_methods"]?.[data.payment_method_id] ?? null,
+    title: data.title,
     amount: data.amount,
     expenseDate: data.expense_date,
   };

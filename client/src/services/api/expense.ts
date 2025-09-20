@@ -7,6 +7,7 @@ export interface IExpenseAPIData {
   user_id: number;
   category_id: number;
   payment_method_id: number;
+  title: string;
   amount: number;
   expense_date: string;
 }
@@ -20,6 +21,7 @@ export interface ICreateExpensePayload {
   userId: number;
   categoryId: number;
   paymentMethodId: number;
+  title: string;
   amount: number;
   expenseDate: string;
 }
@@ -38,6 +40,7 @@ export class ExpenseService extends ApiClient {
       user_id: expense.userId,
       category_id: expense.categoryId,
       payment_method_id: expense.paymentMethodId,
+      title: expense.title,
       amount: expense.amount,
       expense_date: expense.expenseDate,
     });

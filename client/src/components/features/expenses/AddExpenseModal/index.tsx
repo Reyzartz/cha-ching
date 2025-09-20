@@ -10,16 +10,24 @@ const AddExpenseModal = memo(() => {
   const { createExpense, loading } = useExpenses();
 
   const [form, setForm] = useState({
+    title: "",
     amount: "",
     categoryId: 0,
     paymentMethodId: 0,
   });
 
   const handleSubmit = useCallback(() => {
-    if (!form.amount || !form.categoryId || !form.paymentMethodId) return;
+    if (
+      !form.amount ||
+      !form.categoryId ||
+      !form.paymentMethodId ||
+      !form.title
+    )
+      return;
 
     createExpense({
       userId: 1, // Hardcoded for now, should come from auth context
+      title: form.title,
       amount: Number(form.amount),
       categoryId: form.categoryId,
       paymentMethodId: form.paymentMethodId,
@@ -27,6 +35,7 @@ const AddExpenseModal = memo(() => {
     });
 
     setForm({
+      title: "",
       amount: "",
       categoryId: 0,
       paymentMethodId: 0,
@@ -54,6 +63,13 @@ const AddExpenseModal = memo(() => {
         <Modal.Header title="Add Expense" />
         <Modal.Body>
           <View className="gap-4 min-w-96">
+            <Input
+              label="Title"
+              placeholder="Enter title"
+              value={form.title}
+              onChangeText={(text: string) => setForm({ ...form, title: text })}
+            />
+
             <Input
               label="Amount"
               placeholder="Enter amount"

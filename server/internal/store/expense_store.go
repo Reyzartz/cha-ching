@@ -15,6 +15,7 @@ type Expense struct {
 	UserID          int     `json:"user_id"`
 	CategoryID      int     `json:"category_id"`
 	PaymentMethodID int     `json:"payment_method_id"`
+	Title           string  `json:"title"`
 	Amount          float64 `json:"amount"`
 	ExpenseDate     string  `json:"expense_date"`
 }
@@ -107,12 +108,13 @@ func (pg *PostgresExpenseStore) CreateExpense(expense *Expense) (*Expense, error
 			user_id,
 			category_id,
 			payment_method_id,
+			title,
 			amount,
 			expense_date
-		) VALUES ($1, $2, $3, $4, $5)
+		) VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING
 		    ID`
-	err = tx.QueryRow(query, expense.UserID, expense.CategoryID, expense.PaymentMethodID, expense.Amount, expense.ExpenseDate).Scan(&expense.ID)
+	err = tx.QueryRow(query, expense.UserID, expense.CategoryID, expense.PaymentMethodID, expense.Title, expense.Amount, expense.ExpenseDate).Scan(&expense.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -137,6 +139,7 @@ func (pg *PostgresExpenseStore) ListExpensesByUserID(userID int64) ([]*Expense, 
 			e.user_id, 
 			e.category_id,
 			e.payment_method_id, 
+			e.title,
 			e.amount, 
 			e.expense_date,
 			c.id AS category_id,
@@ -165,6 +168,7 @@ func (pg *PostgresExpenseStore) ListExpensesByUserID(userID int64) ([]*Expense, 
 			&expense.UserID,
 			&expense.CategoryID,
 			&expense.PaymentMethodID,
+			&expense.Title,
 			&expense.Amount,
 			&expense.ExpenseDate,
 			&category.ID,
