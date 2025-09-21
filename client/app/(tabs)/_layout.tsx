@@ -19,6 +19,7 @@ export default function TabLayout() {
           ),
         }}
       />
+
       <Tabs.Screen
         name="categories"
         options={{
@@ -28,6 +29,7 @@ export default function TabLayout() {
           ),
         }}
       />
+
       <Tabs.Screen
         name="payment-methods"
         options={{

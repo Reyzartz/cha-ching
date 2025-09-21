@@ -11,7 +11,7 @@ export interface CategoriesListProps {
 const CategoriesList = memo<CategoriesListProps>(({ categories }) => {
   if (categories.length === 0) {
     return (
-      <Card className="flex-1 justify-center items-center max-w-2xl w-full">
+      <Card className="flex-1 justify-center items-center w-full">
         <Text className="text-gray-500 text-lg">No categories yet</Text>
         <Text className="text-gray-400 text-sm mt-2">
           Tap the + button to add your first category
@@ -22,7 +22,7 @@ const CategoriesList = memo<CategoriesListProps>(({ categories }) => {
 
   return (
     <FlatList
-      className="flex-1 w-full max-w-2xl px-4"
+      className="flex-1 w-full px-4"
       data={categories}
       renderItem={({ item }) => <CategoryItem category={item} />}
       keyExtractor={(item) => item.id.toString()}

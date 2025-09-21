@@ -144,7 +144,7 @@ func (pg *PostgresExpenseStore) CreateExpense(expense *Expense) (*Expense, error
 	return expense, nil
 }
 func (pg *PostgresExpenseStore) ListExpensesByUserID(userID int64, queryParams ExpenseQueryParams) ([]*Expense, *ExpensePaginationData, *ExpenseRelatedItems, error) {
-	var expenses []*Expense
+	var expenses []*Expense = []*Expense{}
 	var categories = make(map[int]*Category)
 	var paymentMethods = make(map[int]*PaymentMethod)
 

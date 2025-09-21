@@ -103,5 +103,6 @@ export function useExpenses(filters?: IExpenseFilters) {
     hasNextPage,
     fetchNextPage,
     loadingMore: isFetchingNextPage,
+    isRefetching: !isLoading && isFetchingNextPage,
   };
 }

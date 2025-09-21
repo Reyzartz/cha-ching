@@ -8,6 +8,7 @@ export interface ExpensesListProps {
   expenses: IExpense[];
   onEndReached?: () => void;
   loadingMore?: boolean;
+  isRefetching?: boolean;
 }
 
 const LoadingIndicator = () => (
@@ -17,10 +18,10 @@ const LoadingIndicator = () => (
 );
 
 const ExpensesList = memo<ExpensesListProps>(
-  ({ expenses, onEndReached, loadingMore }) => {
-    if (expenses.length === 0) {
+  ({ expenses, onEndReached, loadingMore, isRefetching }) => {
+    if (expenses.length === 0 && !isRefetching) {
       return (
-        <Card className="flex-1 justify-center items-center max-w-2xl w-full">
+        <Card className="flex-1 justify-center items-center w-full">
           <Text className="text-gray-500 text-lg">No expenses yet</Text>
           <Text className="text-gray-400 text-sm mt-2">
             Tap the + button to add your first expense
@@ -31,15 +32,17 @@ const ExpensesList = memo<ExpensesListProps>(
 
     return (
       <FlatList
-        className="flex-1 w-full max-w-2xl px-4"
+        className="flex-1 w-full"
         data={expenses}
         renderItem={({ item }) => <ExpenseItem expense={item} />}
         keyExtractor={(item) => item.id.toString()}
         ItemSeparatorComponent={() => <View className="h-2" />}
-        contentContainerStyle={{ paddingVertical: 16 }}
+        contentContainerStyle={{ paddingBottom: 24 }}
         onEndReached={onEndReached}
         onEndReachedThreshold={0.2}
-        ListFooterComponent={loadingMore ? LoadingIndicator : undefined}
+        ListFooterComponent={
+          loadingMore || isRefetching ? LoadingIndicator : undefined
+        }
       />
     );
   }
