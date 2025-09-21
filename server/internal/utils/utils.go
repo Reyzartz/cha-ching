@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -45,4 +46,43 @@ func ReadIDParam(r *http.Request) (int64, error) {
 	}
 
 	return id, nil
+}
+
+func ReadIntQueryParam(r *http.Request, key string, defaultValue int) (int, error) {
+	param := r.URL.Query().Get(key)
+	if param == "" {
+		return defaultValue, nil
+	}
+	value, err := strconv.Atoi(param)
+	if err != nil {
+		return 0, err
+	}
+	return value, nil
+}
+
+func ReadStringQueryParam(r *http.Request, key string, defaultValue string) (string, error) {
+	param := r.URL.Query().Get(key)
+	if param == "" {
+		return defaultValue, nil
+	}
+	return param, nil
+}
+
+func ReadDateStringQueryParam(r *http.Request, key string, defaultValue string) (string, error) {
+	param := r.URL.Query().Get(key)
+	if param == "" {
+		return defaultValue, nil
+	}
+	_, err := time.Parse("2006-01-02", param)
+	if err != nil {
+		return "", err
+	}
+	return param, nil
+}
+
+func GetOffset(page *int, limit *int) int {
+	if page == nil || limit == nil || *page <= 1 {
+		return 0
+	}
+	return (*page - 1) * *limit
 }

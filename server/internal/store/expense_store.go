@@ -1,6 +1,7 @@
 package store
 
 import (
+	"cha-ching-server/internal/utils"
 	"database/sql"
 )
 
@@ -20,9 +21,25 @@ type Expense struct {
 	ExpenseDate     string  `json:"expense_date"`
 }
 
+type ExpenseQueryParams struct {
+	Limit     *int
+	Page      *int
+	StartDate *string
+	EndDate   *string
+}
+
 type ExpenseRelatedItems struct {
 	Categories     map[int]*Category      `json:"categories"`
 	PaymentMethods map[int]*PaymentMethod `json:"payment_methods"`
+}
+
+type ExpensePaginationData struct {
+	TotalItems   int  `json:"total_items"`
+	TotalPages   int  `json:"total_pages"`
+	CurrentPage  int  `json:"current_page"`
+	ItemsPerPage int  `json:"items_per_page"`
+	NextPage     *int `json:"next_page"`
+	PrevPage     *int `json:"prev_page"`
 }
 
 type PostgresExpenseStore struct {
@@ -42,7 +59,7 @@ type ExpenseStore interface {
 
 	// // Expense methods
 	CreateExpense(expense *Expense) (*Expense, error)
-	ListExpensesByUserID(userID int64) ([]*Expense, *ExpenseRelatedItems, error)
+	ListExpensesByUserID(userID int64, queryParams ExpenseQueryParams) ([]*Expense, *ExpensePaginationData, *ExpenseRelatedItems, error)
 }
 
 func (pg *PostgresExpenseStore) CreateUser(user *User) (*User, error) {
@@ -126,12 +143,60 @@ func (pg *PostgresExpenseStore) CreateExpense(expense *Expense) (*Expense, error
 
 	return expense, nil
 }
-
-func (pg *PostgresExpenseStore) ListExpensesByUserID(userID int64) ([]*Expense, *ExpenseRelatedItems, error) {
-
+func (pg *PostgresExpenseStore) ListExpensesByUserID(userID int64, queryParams ExpenseQueryParams) ([]*Expense, *ExpensePaginationData, *ExpenseRelatedItems, error) {
 	var expenses []*Expense
 	var categories = make(map[int]*Category)
 	var paymentMethods = make(map[int]*PaymentMethod)
+
+	// Get total count first
+	countQuery := `
+		SELECT COUNT(*) 
+		FROM expenses e
+		WHERE e.user_id = $1 AND
+		($2::text IS NULL OR e.expense_date >= $2::timestamp) AND
+		($3::text IS NULL OR e.expense_date <= $3::timestamp)
+	`
+
+	var totalItems int
+	var startDate, endDate *string
+
+	if queryParams.StartDate != nil {
+		s := *queryParams.StartDate + " 00:00:00"
+		startDate = &s
+	}
+	if queryParams.EndDate != nil {
+		e := *queryParams.EndDate + " 23:59:59"
+		endDate = &e
+	}
+
+	err := pg.db.QueryRow(countQuery, userID, startDate, endDate).Scan(&totalItems)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	// Calculate pagination data
+	itemsPerPage := *queryParams.Limit
+	totalPages := (totalItems + itemsPerPage - 1) / itemsPerPage
+	currentPage := *queryParams.Page
+	var nextPage, prevPage *int
+	if currentPage+1 <= totalPages {
+		nextPage = new(int)
+		*nextPage = currentPage + 1
+	}
+
+	if currentPage-1 >= 1 {
+		prevPage = new(int)
+		*prevPage = currentPage - 1
+	}
+
+	paginationData := &ExpensePaginationData{
+		TotalItems:   totalItems,
+		TotalPages:   totalPages,
+		CurrentPage:  currentPage,
+		ItemsPerPage: itemsPerPage,
+		NextPage:     nextPage,
+		PrevPage:     prevPage,
+	}
 
 	query := `
 		SELECT 
@@ -149,12 +214,26 @@ func (pg *PostgresExpenseStore) ListExpensesByUserID(userID int64) ([]*Expense, 
 		FROM expenses e
 		LEFT JOIN categories c ON c.id = e.category_id
 		LEFT JOIN payment_methods p ON p.id = e.payment_method_id
-		WHERE e.user_id = $1
-		ORDER BY e.expense_date DESC;
+		WHERE e.user_id = $1 AND
+		($2::text IS NULL OR e.expense_date >= $2::timestamp) AND
+		($3::text IS NULL OR e.expense_date <= $3::timestamp)
+		ORDER BY e.expense_date DESC
+		LIMIT $4 OFFSET $5
 	`
-	rows, err := pg.db.Query(query, userID)
+
+	offset := utils.GetOffset(queryParams.Page, queryParams.Limit)
+
+	rows, err := pg.db.Query(
+		query,
+		userID,
+		startDate,
+		endDate,
+		queryParams.Limit,
+		offset,
+	)
+
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	defer rows.Close()
@@ -177,7 +256,7 @@ func (pg *PostgresExpenseStore) ListExpensesByUserID(userID int64) ([]*Expense, 
 			&paymentMethod.Name,
 		)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, nil, err
 		}
 
 		expenses = append(expenses, &expense)
@@ -186,10 +265,10 @@ func (pg *PostgresExpenseStore) ListExpensesByUserID(userID int64) ([]*Expense, 
 	}
 
 	if err = rows.Err(); err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
-	return expenses, &ExpenseRelatedItems{
+	return expenses, paginationData, &ExpenseRelatedItems{
 		Categories:     categories,
 		PaymentMethods: paymentMethods,
 	}, nil

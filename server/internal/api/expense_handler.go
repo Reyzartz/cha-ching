@@ -62,10 +62,6 @@ func (eh *ExpenseHandler) HandleGetUser(w http.ResponseWriter, r *http.Request) 
 	})
 }
 
-
-
-
-
 func (eh *ExpenseHandler) HandleCreateExpense(w http.ResponseWriter, r *http.Request) {
 	var expense store.Expense
 
@@ -92,8 +88,48 @@ func (eh *ExpenseHandler) HandleGetAllExpenses(w http.ResponseWriter, r *http.Re
 	// For simplicity, we are using a hardcoded user ID.
 	// In a real application, you would get this from the authenticated user context.
 	userID := int64(1)
+	queryParams := store.ExpenseQueryParams{}
 
-	expenses, relatedItems, err := eh.expenseStore.ListExpensesByUserID(userID)
+	limit, err := utils.ReadIntQueryParam(r, "limit", 10)
+	if err != nil {
+		eh.logger.Printf("ERROR: ReadIntQueryParam limit: %v", err)
+		utils.WriteJSONResponse(w, http.StatusBadRequest, utils.Envelope{"error": "invalid limit parameter"})
+		return
+	}
+
+	queryParams.Limit = &limit
+
+	page, err := utils.ReadIntQueryParam(r, "page", 1)
+	if err != nil {
+		eh.logger.Printf("ERROR: ReadIntQueryParam page: %v", err)
+		utils.WriteJSONResponse(w, http.StatusBadRequest, utils.Envelope{"error": "invalid page parameter"})
+		return
+	}
+	queryParams.Page = &page
+
+	startDate, err := utils.ReadDateStringQueryParam(r, "start_date", "")
+	if err != nil {
+		eh.logger.Printf("ERROR: ReadStringQueryParam start_date: %v", err)
+		utils.WriteJSONResponse(w, http.StatusBadRequest, utils.Envelope{"error": "invalid start_date parameter"})
+		return
+	}
+
+	if startDate != "" {
+		queryParams.StartDate = &startDate
+	}
+
+	endDate, err := utils.ReadDateStringQueryParam(r, "end_date", "")
+	if err != nil {
+		eh.logger.Printf("ERROR: ReadStringQueryParam end_date: %v", err)
+		utils.WriteJSONResponse(w, http.StatusBadRequest, utils.Envelope{"error": "invalid end_date parameter"})
+		return
+	}
+
+	if endDate != "" {
+		queryParams.EndDate = &endDate
+	}
+
+	expenses, paginationData, relatedItems, err := eh.expenseStore.ListExpensesByUserID(userID, queryParams)
 	if err != nil {
 		eh.logger.Printf("ERROR: ListExpensesByUserID: %v", err)
 		utils.WriteJSONResponse(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})
@@ -102,6 +138,7 @@ func (eh *ExpenseHandler) HandleGetAllExpenses(w http.ResponseWriter, r *http.Re
 
 	utils.WriteJSONResponse(w, http.StatusOK, utils.Envelope{
 		"data":          expenses,
+		"pagination":    paginationData,
 		"related_items": relatedItems,
 	})
 }
