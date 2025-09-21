@@ -4,7 +4,8 @@ import { View, ActivityIndicator, Text } from "react-native";
 import { useExpenses } from "@/hooks";
 
 const ExpensesListContainer = memo(() => {
-  const { expenses, loading, error } = useExpenses();
+  const { expenses, loading, error, hasNextPage, fetchNextPage, loadingMore } =
+    useExpenses();
 
   if (loading) {
     return (
@@ -22,7 +23,19 @@ const ExpensesListContainer = memo(() => {
     );
   }
 
-  return <ExpensesList expenses={expenses} />;
+  const handleLoadMore = () => {
+    if (hasNextPage) {
+      fetchNextPage();
+    }
+  };
+
+  return (
+    <ExpensesList
+      expenses={expenses}
+      onEndReached={handleLoadMore}
+      loadingMore={loadingMore}
+    />
+  );
 });
 
 ExpensesListContainer.displayName = "ExpensesListContainer";

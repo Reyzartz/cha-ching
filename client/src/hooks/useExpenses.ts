@@ -1,9 +1,14 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQueryClient,
+} from "@tanstack/react-query";
 import {
   expenseService,
   ICreateExpensePayload,
   IExpenseAPIData,
   IExpenseRelatedItems,
+  IGetExpensesParams,
 } from "@/services/api/expense";
 import { ICategory } from "./useCategories";
 import { IPaymentMethod } from "./usePaymentMethods";
@@ -39,18 +44,43 @@ function mapExpenseData(
   };
 }
 
-export function useExpenses() {
+export interface IExpenseFilters
+  extends Omit<IGetExpensesParams, "page" | "limit"> {}
+
+const ITEMS_PER_PAGE = 10;
+
+export function useExpenses(filters?: IExpenseFilters) {
   const queryClient = useQueryClient();
 
   const {
-    data: expenses = [],
+    data,
     isLoading,
     error,
-  } = useQuery({
-    queryKey: queryKeys.expenses,
-    queryFn: async () => expenseService.getExpenses(),
-    select: ({ data, related_items }) =>
-      data.map((item) => mapExpenseData(item, related_items)),
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
+    queryKey: [...queryKeys.expenses, filters],
+    queryFn: async ({ pageParam = 1 }) => {
+      const response = await expenseService.getExpenses({
+        page: pageParam,
+        limit: ITEMS_PER_PAGE,
+        ...filters,
+      });
+      return response;
+    },
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => {
+      const hasNextPage = lastPage.pagination?.next_page ?? null;
+      return hasNextPage;
+    },
+    select: (data) => ({
+      pages: data.pages.map((page) => ({
+        ...page,
+        data: page.data.map((item) => mapExpenseData(item, page.related_items)),
+      })),
+      pageParams: data.pageParams,
+    }),
   });
 
   const { mutateAsync: createExpense } = useMutation({
@@ -63,10 +93,15 @@ export function useExpenses() {
     },
   });
 
+  const expenses = data?.pages.flatMap((page) => page.data) ?? [];
+
   return {
     expenses,
     loading: isLoading,
     error,
     createExpense,
+    hasNextPage,
+    fetchNextPage,
+    loadingMore: isFetchingNextPage,
   };
 }

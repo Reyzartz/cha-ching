@@ -26,11 +26,26 @@ export interface ICreateExpensePayload {
   expenseDate: string;
 }
 
+export interface IGetExpensesParams {
+  limit?: number;
+  page?: number;
+  startDate?: string;
+  endDate?: string;
+}
+
 export class ExpenseService extends ApiClient {
-  async getExpenses(): Promise<
-    IServerResponse<IExpenseAPIData[], IExpenseRelatedItems>
-  > {
-    return this.get<IExpenseAPIData[], IExpenseRelatedItems>("/expenses");
+  async getExpenses(
+    params: IGetExpensesParams = {}
+  ): Promise<IServerResponse<IExpenseAPIData[], IExpenseRelatedItems>> {
+    const queryParams = new URLSearchParams();
+    if (params.limit) queryParams.set("limit", params.limit.toString());
+    if (params.page) queryParams.set("page", params.page.toString());
+    if (params.startDate) queryParams.set("start_date", params.startDate);
+    if (params.endDate) queryParams.set("end_date", params.endDate);
+
+    return this.get<IExpenseAPIData[], IExpenseRelatedItems>(
+      `/expenses?${queryParams.toString()}`
+    );
   }
 
   async createExpense(

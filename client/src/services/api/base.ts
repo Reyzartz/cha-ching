@@ -7,10 +7,20 @@ export interface IRelatedItems {
   };
 }
 
+export interface IPaginationData {
+  total_items: number;
+  total_pages: number;
+  current_page: number;
+  items_per_page: number;
+  next_page: number | null;
+  prev_page: number | null;
+}
+
 export interface IServerResponse<T, R extends IRelatedItems = IRelatedItems> {
   data: T;
   error?: string;
   related_items?: R;
+  pagination?: IPaginationData;
 }
 
 export class ApiClient {
