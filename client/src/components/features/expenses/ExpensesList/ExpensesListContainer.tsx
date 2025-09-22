@@ -1,11 +1,20 @@
 import { memo, useCallback, useState } from "react";
 import { ExpensesList } from ".";
-import { View, ActivityIndicator, Text } from "react-native";
-import { useExpenses } from "@/hooks";
+import { View, ActivityIndicator, Text, ScrollView } from "react-native";
+import { useExpenses, useCategories, usePaymentMethods } from "@/hooks";
 import { DateRange, DateRangeFilter } from "./DateRangeFilter";
+import { Select } from "@/components/ui/Select";
 
 const ExpensesListContainer = memo(() => {
   const [dateRange, setDateRange] = useState<DateRange>({});
+
+  const [categoryId, setCategoryId] = useState<number | undefined>(undefined);
+  const [paymentMethodId, setPaymentMethodId] = useState<number | undefined>(
+    undefined
+  );
+
+  const { categories } = useCategories();
+  const { paymentMethods } = usePaymentMethods();
 
   const {
     expenses,
@@ -18,6 +27,8 @@ const ExpensesListContainer = memo(() => {
   } = useExpenses({
     startDate: dateRange.startDate,
     endDate: dateRange.endDate,
+    categoryId,
+    paymentMethodId,
   });
 
   const handleLoadMore = useCallback(() => {
@@ -44,9 +55,34 @@ const ExpensesListContainer = memo(() => {
 
   return (
     <View className="w-full items-center p-4 h-full gap-2">
-      <View className="flex-row items-center gap-2 self-start">
-        <DateRangeFilter value={dateRange} onChange={setDateRange} />
-      </View>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        className="flex-grow-0 self-start"
+        contentContainerClassName="items-center gap-2"
+      >
+        <DateRangeFilter
+          label="Date Range"
+          value={dateRange}
+          onChange={setDateRange}
+        />
+
+        <Select
+          label="Category"
+          value={categoryId}
+          items={[{ id: 0, name: "All Categories" }, ...categories]}
+          placeholder="All Categories"
+          onChange={(id) => setCategoryId(id === 0 ? undefined : id)}
+        />
+
+        <Select
+          label="Payment Method"
+          value={paymentMethodId}
+          items={[{ id: 0, name: "All Methods" }, ...paymentMethods]}
+          placeholder="All Methods"
+          onChange={(id) => setPaymentMethodId(id === 0 ? undefined : id)}
+        />
+      </ScrollView>
 
       <ExpensesList
         expenses={expenses}

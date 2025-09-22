@@ -1,4 +1,10 @@
-import { Pressable, Text, Modal as UIModal, View } from "react-native";
+import {
+  Platform,
+  Pressable,
+  Text,
+  Modal as UIModal,
+  View,
+} from "react-native";
 import { createContext, memo, PropsWithChildren, useContext } from "react";
 import { Icon } from "../Icon";
 
@@ -23,11 +29,19 @@ const Modal = memo(
           visible={visible}
           onRequestClose={onClose}
           transparent
-          animationType="fade"
+          animationType={Platform.OS === "web" ? "fade" : "slide"}
           presentationStyle="overFullScreen"
         >
-          <View className="justify-center items-center bg-black bg-opacity-50 p-10 h-full">
-            <View className="rounded-lg overflow-hidden bg-white">
+          <View
+            className={
+              "bg-black bg-opacity-20 h-full " +
+              Platform.select({
+                web: "justify-center items-center p-10",
+                default: "justify-end",
+              })
+            }
+          >
+            <View className="rounded-lg overflow-hidden bg-white h-3/4">
               {children}
             </View>
           </View>
@@ -59,7 +73,7 @@ const Header = memo(({ title }: PropsWithChildren<IModalHeaderProps>) => {
 Header.displayName = "Header";
 
 const Body = memo(({ children }: PropsWithChildren) => {
-  return <View className="flex-1 p-5">{children}</View>;
+  return <View className="flex-1 p-5 flex-shrink-0">{children}</View>;
 });
 
 Body.displayName = "Body";

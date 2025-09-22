@@ -1,6 +1,6 @@
-import { memo, useCallback, useState } from "react";
-import { View, Text, Pressable, Modal, TouchableOpacity } from "react-native";
-import { Card, Icon } from "@/components/ui";
+import { memo, useCallback, useMemo, useState } from "react";
+import { View, Text, Pressable, TouchableOpacity } from "react-native";
+import { Button, Icon, Modal } from "@/components/ui";
 import DatePicker, {
   DateType,
   useDefaultStyles,
@@ -13,6 +13,8 @@ export interface DateRange {
 }
 
 interface DateRangeFilterProps {
+  label?: string;
+  placeholder?: string;
   value: DateRange;
   onChange: (range: DateRange) => void;
 }
@@ -29,7 +31,7 @@ const parseDate = (dateStr: string | undefined) => {
 };
 
 export const DateRangeFilter = memo<DateRangeFilterProps>(
-  ({ value, onChange }) => {
+  ({ value, onChange, label, placeholder = "Select Date Range" }) => {
     const defaultStyles = useDefaultStyles("light");
 
     const [range, setRange] = useState<{
@@ -70,12 +72,16 @@ export const DateRangeFilter = memo<DateRangeFilterProps>(
     );
 
     const handleConfirm = useCallback(() => {
-      setRange(tempRange);
+      let start = tempRange.startDate;
+      let end = tempRange.endDate;
+      // If only startDate is selected, treat as single day range
+      if (start && !end) {
+        end = start;
+      }
+      setRange({ startDate: start, endDate: end });
       onChange({
-        startDate: tempRange.startDate
-          ? formatDate(tempRange.startDate)
-          : undefined,
-        endDate: tempRange.endDate ? formatDate(tempRange.endDate) : undefined,
+        startDate: start ? formatDate(start) : undefined,
+        endDate: end ? formatDate(end) : undefined,
       });
       setModalVisible(false);
     }, [tempRange, onChange]);
@@ -94,91 +100,75 @@ export const DateRangeFilter = memo<DateRangeFilterProps>(
       setModalVisible(true);
     }, [range]);
 
+    const dateRangeText = useMemo(() => {
+      if (range.startDate) {
+        if (
+          range.endDate &&
+          range.endDate.getTime() !== range.startDate.getTime()
+        ) {
+          return `${dayjs(range.startDate).format("MMM D, YYYY")} - ${dayjs(range.endDate).format("MMM D, YYYY")}`;
+        }
+        return dayjs(range.startDate).format("MMM D, YYYY");
+      }
+      return placeholder;
+    }, [range, placeholder]);
+
     return (
       <>
-        <View className="border border-gray-200 rounded-md bg-white flex-row gap-2">
-          <TouchableOpacity
-            onPress={onEditDateRange}
-            className="pl-4 pr-2     py-2"
-          >
-            <Text className="text-gray-400">
-              {range.startDate && range.endDate
-                ? `${dayjs(range.startDate).format("MMM D, YYYY")} - ${dayjs(range.endDate).format("MMM D, YYYY")}`
-                : "Select Date Range"}
+        <View style={{ minWidth: 160 }}>
+          {label && (
+            <Text className="font-medium text-xs text-gray-600 mb-0.5">
+              {label}
             </Text>
-          </TouchableOpacity>
-
-          {(range.startDate || range.endDate) && (
-            <Pressable
-              onPress={handleClearFilter}
-              className="px-2 justify-center border-l border-gray-200"
-            >
-              <Icon name="close" size={16} color="#3b82f6" />
-            </Pressable>
           )}
+
+          <View className="border border-gray-200 rounded-md bg-white flex-row">
+            <TouchableOpacity
+              onPress={onEditDateRange}
+              className="px-3 py-2 flex-1"
+            >
+              <Text
+                className={range.startDate ? "text-gray-700" : "text-gray-400"}
+                numberOfLines={1}
+              >
+                {dateRangeText}
+              </Text>
+            </TouchableOpacity>
+
+            {(range.startDate || range.endDate) && (
+              <Pressable
+                onPress={handleClearFilter}
+                className="px-2 justify-center border-l border-gray-200"
+              >
+                <Icon name="close" size={16} color="#3b82f6" />
+              </Pressable>
+            )}
+          </View>
         </View>
 
-        <Modal
-          visible={modalVisible}
-          animationType="slide"
-          transparent={true}
-          onRequestClose={() => setModalVisible(false)}
-        >
-          <View
-            style={{
-              flex: 1,
-              justifyContent: "center",
-              alignItems: "center",
-              backgroundColor: "rgba(0,0,0,0.2)",
-            }}
-          >
-            <View
-              style={{
-                backgroundColor: "#fff",
-                borderRadius: 12,
-                padding: 16,
-                alignItems: "center",
-              }}
-            >
-              <DatePicker
-                mode="range"
-                startDate={tempRange.startDate}
-                endDate={tempRange.endDate}
-                onChange={handleTempChange}
-                styles={defaultStyles}
-                locale="en"
-                startYear={2000}
-                endYear={2100}
-                style={{ width: 320 }}
-                maxDate={new Date()}
-              />
-              <View style={{ flexDirection: "row", marginTop: 16 }}>
-                <TouchableOpacity
-                  style={{
-                    marginRight: 16,
-                    padding: 8,
-                    borderRadius: 6,
-                    backgroundColor: "#2563eb",
-                  }}
-                  onPress={handleConfirm}
-                >
-                  <Text style={{ color: "#fff", fontWeight: "bold" }}>
-                    Confirm
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={{
-                    padding: 8,
-                    borderRadius: 6,
-                    backgroundColor: "#e5e7eb",
-                  }}
-                  onPress={() => setModalVisible(false)}
-                >
-                  <Text style={{ color: "#374151" }}>Cancel</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
+        <Modal open={modalVisible} onClose={() => setModalVisible(false)}>
+          <Modal.Body>
+            <DatePicker
+              mode="range"
+              startDate={tempRange.startDate}
+              endDate={tempRange.endDate}
+              onChange={handleTempChange}
+              styles={defaultStyles}
+              locale="en"
+              startYear={2000}
+              endYear={2100}
+              style={{ width: 320 }}
+              maxDate={new Date()}
+            />
+          </Modal.Body>
+
+          <Modal.Footer>
+            <Button onPress={() => setModalVisible(false)} variant="outline">
+              Cancel
+            </Button>
+
+            <Button onPress={handleConfirm}>Confirm</Button>
+          </Modal.Footer>
         </Modal>
       </>
     );

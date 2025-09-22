@@ -25,42 +25,74 @@ const Select = memo<SelectProps>(
     );
 
     return (
-      <View>
-        <Text className="text-sm font-medium text-gray-700 mb-1">{label}</Text>
+      <View style={{ minWidth: 160 }}>
+        {label && (
+          <Text className="font-medium text-xs text-gray-700 mb-0.5">
+            {label}
+          </Text>
+        )}
+
         <Pressable
           onPress={() => setIsOpen(true)}
-          className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg flex-row items-center justify-between"
+          className="border px-3 py-2 border-gray-200 rounded-md bg-white items-center flex-row"
         >
-          <Text className={selectedItem ? "text-gray-900" : "text-gray-400"}>
+          <Text
+            className={
+              selectedItem ? "text-gray-700 flex-1" : "text-gray-400 flex-1"
+            }
+            numberOfLines={1}
+          >
             {selectedItem?.name || placeholder}
           </Text>
-          <Icon name="caretdown" size={20} color="#6B7280" />
+
+          <Icon name="caretdown" size={10} color="#6b7280" />
         </Pressable>
 
         <Modal
           visible={isOpen}
-          transparent
-          animationType="fade"
+          animationType="slide"
+          transparent={true}
           onRequestClose={() => setIsOpen(false)}
         >
           <Pressable
-            className="flex-1 bg-black/50 justify-center items-center"
+            style={{
+              flex: 1,
+              justifyContent: "center",
+              alignItems: "center",
+              backgroundColor: "rgba(0,0,0,0.2)",
+            }}
             onPress={() => setIsOpen(false)}
           >
-            <View className="bg-white rounded-lg w-80 max-h-96 overflow-hidden">
+            <View
+              style={{
+                backgroundColor: "#fff",
+                borderRadius: 12,
+                padding: 0,
+                alignItems: "stretch",
+                width: 320,
+                maxHeight: 384,
+                overflow: "hidden",
+              }}
+            >
               <ScrollView>
                 {items.map((item) => (
                   <Pressable
                     key={item.id}
                     onPress={() => handleSelect(item.id)}
-                    className={`px-4 py-3 border-b border-gray-100 ${
-                      item.id === value ? "bg-blue-50" : ""
-                    }`}
+                    style={{
+                      paddingHorizontal: 16,
+                      paddingVertical: 12,
+                      borderBottomWidth: 1,
+                      borderBottomColor: "#f3f4f6",
+                      backgroundColor: item.id === value ? "#eff6ff" : "#fff",
+                    }}
                   >
                     <Text
-                      className={
-                        item.id === value ? "text-blue-600" : "text-gray-900"
-                      }
+                      style={{
+                        color: item.id === value ? "#2563eb" : "#111827",
+                        fontWeight: item.id === value ? "bold" : "normal",
+                        fontSize: 16,
+                      }}
                     >
                       {item.name}
                     </Text>

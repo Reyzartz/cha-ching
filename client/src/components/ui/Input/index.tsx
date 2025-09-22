@@ -10,30 +10,20 @@ export interface InputProps extends TextInputProps {
 const Input = memo(
   forwardRef<TextInput, InputProps>(
     ({ label, error, helperText, className = "", ...props }, ref) => {
-      const inputStyles = `
-    rounded-md 
-    border 
-    bg-white 
-    px-4 
-    py-3 
-    text-gray-900
-    ${error ? "border-red-500" : "border-gray-200 focus:border-blue-500"}
-    ${className}
-  `
-        .trim()
-        .replace(/\s+/g, " ");
-
       return (
-        <View className="w-full">
+        <View style={{ minWidth: 160 }}>
           {label && (
-            <Text className="text-sm font-medium text-gray-700 mb-2">
+            <Text className="font-medium text-xs text-gray-600 mb-0.5">
               {label}
             </Text>
           )}
 
           <TextInput
             ref={ref}
-            className={inputStyles}
+            className={`border px-3 py-2 border-gray-200 rounded-md bg-white text-gray-700 
+              ${error ? "border-red-500" : "border-gray-200 focus:border-blue-500"}
+              ${className}
+            `}
             placeholderTextColor="#9CA3AF"
             {...props}
           />

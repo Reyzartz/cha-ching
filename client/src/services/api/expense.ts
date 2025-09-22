@@ -31,6 +31,8 @@ export interface IGetExpensesParams {
   page?: number;
   startDate?: string;
   endDate?: string;
+  categoryId?: number;
+  paymentMethodId?: number;
 }
 
 export class ExpenseService extends ApiClient {
@@ -42,6 +44,10 @@ export class ExpenseService extends ApiClient {
     if (params.page) queryParams.set("page", params.page.toString());
     if (params.startDate) queryParams.set("start_date", params.startDate);
     if (params.endDate) queryParams.set("end_date", params.endDate);
+    if (params.categoryId)
+      queryParams.set("category_id", params.categoryId.toString());
+    if (params.paymentMethodId)
+      queryParams.set("payment_method_id", params.paymentMethodId.toString());
 
     return this.get<IExpenseAPIData[], IExpenseRelatedItems>(
       `/expenses?${queryParams.toString()}`
