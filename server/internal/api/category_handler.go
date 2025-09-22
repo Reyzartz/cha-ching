@@ -54,3 +54,17 @@ func (ch *CategoryHandler) HandleGetAllCategories(w http.ResponseWriter, r *http
 		"data": categories,
 	})
 }
+
+func (ch *CategoryHandler) HandleGetCategoryStats(w http.ResponseWriter, r *http.Request) {
+	stats, err := ch.categoryStore.CategoryStats()
+
+	if err != nil {
+		ch.logger.Printf("ERROR: CategoryStats: %v", err)
+		utils.WriteJSONResponse(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})
+		return
+	}
+
+	utils.WriteJSONResponse(w, http.StatusOK, utils.Envelope{
+		"data": stats,
+	})
+}

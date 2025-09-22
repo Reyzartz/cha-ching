@@ -1,10 +1,10 @@
 import { memo } from "react";
 import { View, ActivityIndicator, Text } from "react-native";
-import { useCategories } from "@/hooks";
+import { useCategoriesStats } from "@/hooks";
 import { CategoriesList } from ".";
 
 const CategoriesListContainer = memo(() => {
-  const { categories, loading, error } = useCategories();
+  const { categoriesStats, loading, error } = useCategoriesStats();
 
   if (loading) {
     return (
@@ -22,7 +22,7 @@ const CategoriesListContainer = memo(() => {
     );
   }
 
-  return <CategoriesList categories={categories} />;
+  return <CategoriesList categoriesStats={categoriesStats} />;
 });
 
 CategoriesListContainer.displayName = "CategoriesListContainer";

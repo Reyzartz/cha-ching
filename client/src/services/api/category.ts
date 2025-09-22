@@ -5,6 +5,12 @@ export interface ICategoryAPIData {
   name: string;
 }
 
+export interface ICategoryStatsAPIData {
+  id: number;
+  name: string;
+  total_amount: number;
+}
+
 export interface ICreateCategoryPayload {
   name: string;
 }
@@ -18,6 +24,10 @@ export class CategoryService extends ApiClient {
     category: ICreateCategoryPayload
   ): Promise<IServerResponse<ICategoryAPIData>> {
     return this.post<ICategoryAPIData>("/categories", category);
+  }
+
+  async getCategoriesStats() {
+    return this.get<ICategoryStatsAPIData[]>("/categories/stats");
   }
 }
 
