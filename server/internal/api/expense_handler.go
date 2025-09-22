@@ -129,6 +129,26 @@ func (eh *ExpenseHandler) HandleGetAllExpenses(w http.ResponseWriter, r *http.Re
 		queryParams.EndDate = &endDate
 	}
 
+	categoryID, err := utils.ReadIntQueryParam(r, "category_id", 0)
+	if err != nil {
+		eh.logger.Printf("ERROR: ReadIntQueryParam category_id: %v", err)
+		utils.WriteJSONResponse(w, http.StatusBadRequest, utils.Envelope{"error": "invalid category_id parameter"})
+		return
+	}
+	if categoryID != 0 {
+		queryParams.CategoryID = &categoryID
+	}
+
+	paymentMethodID, err := utils.ReadIntQueryParam(r, "payment_method_id", 0)
+	if err != nil {
+		eh.logger.Printf("ERROR: ReadIntQueryParam payment_method_id: %v", err)
+		utils.WriteJSONResponse(w, http.StatusBadRequest, utils.Envelope{"error": "invalid payment_method_id parameter"})
+		return
+	}
+	if paymentMethodID != 0 {
+		queryParams.PaymentMethodID = &paymentMethodID
+	}
+
 	expenses, paginationData, relatedItems, err := eh.expenseStore.ListExpensesByUserID(userID, queryParams)
 	if err != nil {
 		eh.logger.Printf("ERROR: ListExpensesByUserID: %v", err)

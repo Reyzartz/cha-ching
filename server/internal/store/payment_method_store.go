@@ -1,6 +1,9 @@
 package store
 
-import "database/sql"
+import (
+	"context"
+	"database/sql"
+)
 
 type PaymentMethod struct {
 	ID   int    `json:"id"`
@@ -35,7 +38,9 @@ func (pg *PostgresPaymentMethodStore) CreatePaymentMethod(paymentMethod *Payment
 		    VALUES ($1) 
 		RETURNING id`
 
-	err = tx.QueryRow(query, paymentMethod.Name).Scan(&paymentMethod.ID)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	err = tx.QueryRowContext(ctx, query, paymentMethod.Name).Scan(&paymentMethod.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +61,9 @@ func (pg *PostgresPaymentMethodStore) ListPaymentMethods() ([]*PaymentMethod, er
 		FROM payment_methods pm
 		ORDER BY pm.id`
 
-	rows, err := pg.db.Query(query)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	rows, err := pg.db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
 	}

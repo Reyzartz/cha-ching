@@ -1,6 +1,9 @@
 package store
 
-import "database/sql"
+import (
+	"context"
+	"database/sql"
+)
 
 type Category struct {
 	ID   int    `json:"id"`
@@ -36,7 +39,9 @@ func (pg *PostgresCategoryStore) CreateCategory(category *Category) (*Category, 
 		RETURNING
 		    id`
 
-	err = tx.QueryRow(query, category.Name).Scan(&category.ID)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	err = tx.QueryRowContext(ctx, query, category.Name).Scan(&category.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +62,9 @@ func (pg *PostgresCategoryStore) ListCategories() ([]*Category, error) {
 		FROM categories c
 		ORDER BY c.id`
 
-	rows, err := pg.db.Query(query)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	rows, err := pg.db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
 	}

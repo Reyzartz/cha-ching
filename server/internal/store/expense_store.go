@@ -2,6 +2,7 @@ package store
 
 import (
 	"cha-ching-server/internal/utils"
+	"context"
 	"database/sql"
 )
 
@@ -22,10 +23,12 @@ type Expense struct {
 }
 
 type ExpenseQueryParams struct {
-	Limit     *int
-	Page      *int
-	StartDate *string
-	EndDate   *string
+	Limit           *int
+	Page            *int
+	StartDate       *string
+	EndDate         *string
+	CategoryID      *int
+	PaymentMethodID *int
 }
 
 type ExpenseRelatedItems struct {
@@ -76,7 +79,9 @@ func (pg *PostgresExpenseStore) CreateUser(user *User) (*User, error) {
 		RETURNING
 		    id`
 
-	err = tx.QueryRow(query, user.Name, user.Email).Scan(&user.ID)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	err = tx.QueryRowContext(ctx, query, user.Name, user.Email).Scan(&user.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +102,9 @@ func (pg *PostgresExpenseStore) GetUserByID(id int64) (*User, error) {
 		FROM users u
 		WHERE u.id = $1`
 
-	err := pg.db.QueryRow(query, id).Scan(
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	err := pg.db.QueryRowContext(ctx, query, id).Scan(
 		&user.ID,
 		&user.Name,
 		&user.Email,
@@ -131,7 +138,9 @@ func (pg *PostgresExpenseStore) CreateExpense(expense *Expense) (*Expense, error
 		) VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING
 		    ID`
-	err = tx.QueryRow(query, expense.UserID, expense.CategoryID, expense.PaymentMethodID, expense.Title, expense.Amount, expense.ExpenseDate).Scan(&expense.ID)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	err = tx.QueryRowContext(ctx, query, expense.UserID, expense.CategoryID, expense.PaymentMethodID, expense.Title, expense.Amount, expense.ExpenseDate).Scan(&expense.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -153,23 +162,35 @@ func (pg *PostgresExpenseStore) ListExpensesByUserID(userID int64, queryParams E
 		SELECT COUNT(*) 
 		FROM expenses e
 		WHERE e.user_id = $1 AND
-		($2::text IS NULL OR e.expense_date >= $2::timestamp) AND
-		($3::text IS NULL OR e.expense_date <= $3::timestamp)
+		($2::text IS NULL OR (e.expense_date AT TIME ZONE 'Asia/Kolkata') >= ($2::timestamp AT TIME ZONE 'Asia/Kolkata')) AND
+		($3::text IS NULL OR (e.expense_date AT TIME ZONE 'Asia/Kolkata') <= ($3::timestamp AT TIME ZONE 'Asia/Kolkata')) AND
+		($4::int IS NULL OR e.category_id = $4) AND
+		($5::int IS NULL OR e.payment_method_id = $5)
 	`
 
 	var totalItems int
 	var startDate, endDate *string
 
 	if queryParams.StartDate != nil {
-		s := *queryParams.StartDate + " 00:00:00"
+		s := *queryParams.StartDate + " 00:00:00.000+05:30"
 		startDate = &s
 	}
 	if queryParams.EndDate != nil {
-		e := *queryParams.EndDate + " 23:59:59"
+		e := *queryParams.EndDate + " 23:59:59+05:30"
 		endDate = &e
 	}
 
-	err := pg.db.QueryRow(countQuery, userID, startDate, endDate).Scan(&totalItems)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	err := pg.db.QueryRowContext(
+		ctx,
+		countQuery,
+		userID,
+		startDate,
+		endDate,
+		queryParams.CategoryID,
+		queryParams.PaymentMethodID).Scan(&totalItems)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -215,19 +236,27 @@ func (pg *PostgresExpenseStore) ListExpensesByUserID(userID int64, queryParams E
 		LEFT JOIN categories c ON c.id = e.category_id
 		LEFT JOIN payment_methods p ON p.id = e.payment_method_id
 		WHERE e.user_id = $1 AND
-		($2::text IS NULL OR e.expense_date >= $2::timestamp) AND
-		($3::text IS NULL OR e.expense_date <= $3::timestamp)
+		($2::text IS NULL OR (e.expense_date AT TIME ZONE 'Asia/Kolkata') >= ($2::timestamp AT TIME ZONE 'Asia/Kolkata')) AND
+		($3::text IS NULL OR (e.expense_date AT TIME ZONE 'Asia/Kolkata') <= ($3::timestamp AT TIME ZONE 'Asia/Kolkata')) AND
+		($4::int IS NULL OR e.category_id = $4) AND
+		($5::int IS NULL OR e.payment_method_id = $5)
 		ORDER BY e.expense_date DESC
-		LIMIT $4 OFFSET $5
+		LIMIT $6 OFFSET $7
 	`
 
 	offset := utils.GetOffset(queryParams.Page, queryParams.Limit)
 
-	rows, err := pg.db.Query(
+	ctx2, cancel2 := context.WithCancel(context.Background())
+	defer cancel2()
+
+	rows, err := pg.db.QueryContext(
+		ctx2,
 		query,
 		userID,
 		startDate,
 		endDate,
+		queryParams.CategoryID,
+		queryParams.PaymentMethodID,
 		queryParams.Limit,
 		offset,
 	)
