@@ -53,3 +53,16 @@ func (ph *PaymentMethodHandler) HandleGetAllPaymentMethods(w http.ResponseWriter
 		"data": paymentMethods,
 	})
 }
+
+func (ph *PaymentMethodHandler) HandleGetPaymentMethodStats(w http.ResponseWriter, r *http.Request) {
+	stats, err := ph.paymentMethodStore.PaymentMethodStats()
+	if err != nil {
+		ph.logger.Printf("ERROR: PaymentMethodStats: %v", err)
+		utils.WriteJSONResponse(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})
+		return
+	}
+
+	utils.WriteJSONResponse(w, http.StatusOK, utils.Envelope{
+		"data": stats,
+	})
+}
