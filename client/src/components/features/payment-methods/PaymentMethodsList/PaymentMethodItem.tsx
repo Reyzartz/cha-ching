@@ -1,22 +1,20 @@
 import { memo } from "react";
-import { Text, View } from "react-native";
+import { Text } from "react-native";
 import { Card } from "@/components/ui";
-import { IPaymentMethod } from "@/hooks";
+import { IPaymentMethodStats } from "@/hooks";
 
 export interface PaymentMethodItemProps {
-  paymentMethod: IPaymentMethod;
+  paymentMethod: IPaymentMethodStats;
 }
 
 const PaymentMethodItem = memo<PaymentMethodItemProps>(({ paymentMethod }) => {
   return (
-    <Card className="w-full" padding="md">
-      <View className="flex-row justify-between items-center gap-4">
-        <View className="flex-col gap-1 flex-1">
-          <Text className="font-semibold text-gray-900">
-            {paymentMethod.name}
-          </Text>
-        </View>
-      </View>
+    <Card className="w-full justify-between items-center flex-row" padding="md">
+      <Text className="font-semibold text-gray-900">{paymentMethod.name}</Text>
+
+      <Text className="text-lg font-semibold text-blue-500">
+        ₹{paymentMethod.totalAmount.toFixed(2)}
+      </Text>
     </Card>
   );
 });

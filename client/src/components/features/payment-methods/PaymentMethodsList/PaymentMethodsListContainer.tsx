@@ -1,10 +1,10 @@
 import { memo } from "react";
 import { View, ActivityIndicator, Text } from "react-native";
-import { usePaymentMethods } from "@/hooks";
+import { usePaymentMethodsStats } from "@/hooks";
 import { PaymentMethodsList } from ".";
 
 const PaymentMethodsListContainer = memo(() => {
-  const { paymentMethods, loading, error } = usePaymentMethods();
+  const { paymentMethodsStats, loading, error } = usePaymentMethodsStats();
 
   if (loading) {
     return (
@@ -22,7 +22,7 @@ const PaymentMethodsListContainer = memo(() => {
     );
   }
 
-  return <PaymentMethodsList paymentMethods={paymentMethods} />;
+  return <PaymentMethodsList paymentMethodsStats={paymentMethodsStats} />;
 });
 
 PaymentMethodsListContainer.displayName = "PaymentMethodsListContainer";

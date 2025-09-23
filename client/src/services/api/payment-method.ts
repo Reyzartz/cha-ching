@@ -5,6 +5,12 @@ export interface IPaymentMethodAPIData {
   name: string;
 }
 
+export interface IPaymentMethodStatsAPIData {
+  id: number;
+  name: string;
+  total_amount: number;
+}
+
 export interface ICreatePaymentMethodPayload {
   name: string;
 }
@@ -18,6 +24,12 @@ export class PaymentMethodService extends ApiClient {
     paymentMethod: ICreatePaymentMethodPayload
   ): Promise<IServerResponse<IPaymentMethodAPIData>> {
     return this.post<IPaymentMethodAPIData>("/payment-methods", paymentMethod);
+  }
+
+  async getPaymentMethodsStats(): Promise<
+    IServerResponse<IPaymentMethodStatsAPIData[]>
+  > {
+    return this.get<IPaymentMethodStatsAPIData[]>("/payment-methods/stats");
   }
 }
 

@@ -1,16 +1,16 @@
 import { memo } from "react";
 import { View, Text, FlatList } from "react-native";
 import { Card } from "@/components/ui";
-import { IPaymentMethod } from "@/hooks";
+import { IPaymentMethodStats } from "@/hooks";
 import { PaymentMethodItem } from "./PaymentMethodItem";
 
 export interface PaymentMethodsListProps {
-  paymentMethods: IPaymentMethod[];
+  paymentMethodsStats: IPaymentMethodStats[];
 }
 
 const PaymentMethodsList = memo<PaymentMethodsListProps>(
-  ({ paymentMethods }) => {
-    if (paymentMethods.length === 0) {
+  ({ paymentMethodsStats }) => {
+    if (paymentMethodsStats.length === 0) {
       return (
         <Card className="flex-1 justify-center items-center w-full">
           <Text className="text-gray-500 text-lg">No payment methods yet</Text>
@@ -24,7 +24,7 @@ const PaymentMethodsList = memo<PaymentMethodsListProps>(
     return (
       <FlatList
         className="flex-1 w-full px-4"
-        data={paymentMethods}
+        data={paymentMethodsStats}
         renderItem={({ item }) => <PaymentMethodItem paymentMethod={item} />}
         keyExtractor={(item) => item.id.toString()}
         ItemSeparatorComponent={() => <View className="h-2" />}
