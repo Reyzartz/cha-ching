@@ -40,5 +40,6 @@ func RegisterRoutes(app *app.Application) *chi.Mux {
 	// Expense endpoints
 	r.Post("/expenses", app.ExpenseHandler.HandleCreateExpense)
 	r.Get("/expenses", app.ExpenseHandler.HandleGetAllExpenses)
+	r.Get("/expenses/stats/total-per-day", app.ExpenseHandler.HandleGetExpensesTotalPerDay)
 	return r
 }

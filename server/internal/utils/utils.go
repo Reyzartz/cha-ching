@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/gorilla/schema"
 )
 
 type Envelope map[string]interface{}
@@ -85,4 +86,15 @@ func GetOffset(page *int, limit *int) int {
 		return 0
 	}
 	return (*page - 1) * *limit
+}
+func QueryParamsDecoder[T any](r *http.Request, dst *T) error {
+	decoder := schema.NewDecoder()
+	decoder.IgnoreUnknownKeys(true)
+
+	err := decoder.Decode(dst, r.URL.Query())
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

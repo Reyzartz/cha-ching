@@ -22,13 +22,26 @@ type Expense struct {
 	ExpenseDate     string  `json:"expense_date"`
 }
 
+type ExpenseTotalPerDay struct {
+	ExpenseDate string  `json:"expense_date"`
+	Count       int     `json:"count"`
+	TotalAmount float64 `json:"total_amount"`
+}
+
 type ExpenseQueryParams struct {
-	Limit           *int
-	Page            *int
-	StartDate       *string
-	EndDate         *string
-	CategoryID      *int
-	PaymentMethodID *int
+	Limit           *int    `schema:"limit"`
+	Page            *int    `schema:"page"`
+	StartDate       *string `schema:"start_date"`
+	EndDate         *string `schema:"end_date"`
+	CategoryID      *int    `schema:"category_id"`
+	PaymentMethodID *int    `schema:"payment_method_id"`
+}
+
+type ExpenseTotalPerDayQueryParams struct {
+	StartDate       *string `schema:"start_date"`
+	EndDate         *string `schema:"end_date"`
+	CategoryID      *int    `schema:"category_id"`
+	PaymentMethodID *int    `schema:"payment_method_id"`
 }
 
 type ExpenseRelatedItems struct {
@@ -63,6 +76,7 @@ type ExpenseStore interface {
 	// // Expense methods
 	CreateExpense(expense *Expense) (*Expense, error)
 	ListExpensesByUserID(userID int64, queryParams ExpenseQueryParams) ([]*Expense, *ExpensePaginationData, *ExpenseRelatedItems, error)
+	ListExpensesTotalPerDay(userID int64, queryParams ExpenseTotalPerDayQueryParams) ([]*ExpenseTotalPerDay, error)
 }
 
 func (pg *PostgresExpenseStore) CreateUser(user *User) (*User, error) {
@@ -236,8 +250,8 @@ func (pg *PostgresExpenseStore) ListExpensesByUserID(userID int64, queryParams E
 		LEFT JOIN categories c ON c.id = e.category_id
 		LEFT JOIN payment_methods p ON p.id = e.payment_method_id
 		WHERE e.user_id = $1 AND
-		($2::text IS NULL OR (e.expense_date AT TIME ZONE 'Asia/Kolkata') >= ($2::timestamp AT TIME ZONE 'Asia/Kolkata')) AND
-		($3::text IS NULL OR (e.expense_date AT TIME ZONE 'Asia/Kolkata') <= ($3::timestamp AT TIME ZONE 'Asia/Kolkata')) AND
+		($2::text IS NULL OR e.expense_date >= ($2::timestamp AT TIME ZONE 'Asia/Kolkata')) AND
+		($3::text IS NULL OR e.expense_date <= ($3::timestamp AT TIME ZONE 'Asia/Kolkata')) AND
 		($4::int IS NULL OR e.category_id = $4) AND
 		($5::int IS NULL OR e.payment_method_id = $5)
 		ORDER BY e.expense_date DESC
@@ -301,4 +315,71 @@ func (pg *PostgresExpenseStore) ListExpensesByUserID(userID int64, queryParams E
 		Categories:     categories,
 		PaymentMethods: paymentMethods,
 	}, nil
+}
+
+func (pg *PostgresExpenseStore) ListExpensesTotalPerDay(userID int64, queryParams ExpenseTotalPerDayQueryParams) ([]*ExpenseTotalPerDay, error) {
+	var expenseTotalPerDays []*ExpenseTotalPerDay = []*ExpenseTotalPerDay{}
+
+	query := `
+	SELECT 
+		TO_CHAR((e.expense_date AT TIME ZONE 'Asia/Kolkata'), 'YYYY-MM-DD') AS formatted_date,
+		SUM(e.amount) AS total_amount,
+		COUNT(e.id) AS count
+	FROM expenses e
+	WHERE 
+		e.user_id = $1 AND
+		($2::timestamp IS NULL OR e.expense_date >= $2 AT TIME ZONE 'Asia/Kolkata') AND
+		($3::timestamp IS NULL OR e.expense_date <= $3 AT TIME ZONE 'Asia/Kolkata') AND
+		($4::int IS NULL OR e.category_id = $4) AND
+		($5::int IS NULL OR e.payment_method_id = $5)
+	GROUP BY formatted_date
+	ORDER BY formatted_date DESC
+	`
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	var startDate, endDate *string
+
+	if queryParams.StartDate != nil {
+		s := *queryParams.StartDate + " 00:00:00.000+05:30"
+		startDate = &s
+	}
+	if queryParams.EndDate != nil {
+		e := *queryParams.EndDate + " 23:59:59+05:30"
+		endDate = &e
+	}
+
+	rows, err := pg.db.QueryContext(
+		ctx,
+		query,
+		userID,
+		startDate,
+		endDate,
+		queryParams.CategoryID,
+		queryParams.PaymentMethodID,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		var expenseTotalPerDay ExpenseTotalPerDay
+
+		err = rows.Scan(&expenseTotalPerDay.ExpenseDate, &expenseTotalPerDay.TotalAmount, &expenseTotalPerDay.Count)
+		if err != nil {
+			return nil, err
+		}
+
+		expenseTotalPerDays = append(expenseTotalPerDays, &expenseTotalPerDay)
+	}
+
+	err = rows.Err()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return expenseTotalPerDays, nil
 }
