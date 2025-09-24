@@ -51,4 +51,3 @@ const ExpensesList = memo<ExpensesListProps>(
 ExpensesList.displayName = "ExpensesList";
 
 export { ExpensesList };
-export { ExpensesListContainer } from "./ExpensesListContainer";

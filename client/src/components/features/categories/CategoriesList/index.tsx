@@ -39,4 +39,3 @@ const CategoriesList = memo<CategoriesListProps>(
 CategoriesList.displayName = "CategoriesList";
 
 export { CategoriesList };
-export { CategoriesListContainer } from "./CategoriesListContainer";

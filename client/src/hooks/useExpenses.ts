@@ -1,6 +1,7 @@
 import {
   useInfiniteQuery,
   useMutation,
+  useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
 import {
@@ -13,6 +14,13 @@ import {
 import { ICategory } from "./useCategories";
 import { IPaymentMethod } from "./usePaymentMethods";
 import { queryKeys } from "@/constants/queryKeys";
+import {
+  startOfWeek,
+  endOfWeek,
+  startOfMonth,
+  endOfMonth,
+  format,
+} from "date-fns";
 
 export interface IExpense {
   id: number;
@@ -105,4 +113,59 @@ export function useExpenses(filters?: IExpenseFilters) {
     loadingMore: isFetchingNextPage,
     isRefetching: !isLoading && isFetchingNextPage,
   };
+}
+
+export type TExpensePerDayRange = "current_week" | "current_month";
+
+export interface IExpensePerDayFilters {
+  range?: TExpensePerDayRange;
+  startDate?: string;
+  endDate?: string;
+  categoryId?: number;
+  paymentMethodId?: number;
+}
+
+function getDateRange(range: TExpensePerDayRange) {
+  const today = new Date();
+  let startDate: string;
+  let endDate: string;
+
+  switch (range) {
+    case "current_week": {
+      startDate = format(startOfWeek(today), "yyyy-MM-dd");
+      endDate = format(endOfWeek(today), "yyyy-MM-dd");
+      break;
+    }
+    case "current_month": {
+      startDate = format(startOfMonth(today), "yyyy-MM-dd");
+      endDate = format(endOfMonth(today), "yyyy-MM-dd");
+      break;
+    }
+    default: {
+      startDate = format(today, "yyyy-MM-dd");
+      endDate = format(today, "yyyy-MM-dd");
+    }
+  }
+
+  return { startDate, endDate };
+}
+
+export function useExpensesPerDay(filters?: IExpensePerDayFilters) {
+  const {
+    data = [],
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: [...queryKeys.expenses, "stats", "per-day", filters],
+    queryFn: () => {
+      const dateRange = getDateRange(filters?.range ?? "current_week");
+      return expenseService.getTotalPerDay({
+        ...dateRange,
+        ...filters,
+      });
+    },
+    select: (response) => response.data,
+  });
+
+  return { expensesPerDay: data, loading: isLoading, error };
 }

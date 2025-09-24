@@ -37,4 +37,3 @@ const PaymentMethodsList = memo<PaymentMethodsListProps>(
 PaymentMethodsList.displayName = "PaymentMethodsList";
 
 export { PaymentMethodsList };
-export { PaymentMethodsListContainer } from "./PaymentMethodsListContainer";

@@ -1,6 +1,7 @@
 import { ApiClient, IRelatedItems, IServerResponse } from "./base";
 import { ICategoryAPIData } from "./category";
 import { IPaymentMethodAPIData } from "./payment-method";
+import { startOfWeek, endOfWeek, format } from "date-fns";
 
 export interface IExpenseAPIData {
   id: number;
@@ -10,6 +11,12 @@ export interface IExpenseAPIData {
   title: string;
   amount: number;
   expense_date: string;
+}
+
+export interface IExpenseStatsPerDayAPIData {
+  expense_date: string;
+  count: number;
+  total_amount: number;
 }
 
 export interface IExpenseRelatedItems extends IRelatedItems {
@@ -31,6 +38,13 @@ export interface IGetExpensesParams {
   page?: number;
   startDate?: string;
   endDate?: string;
+  categoryId?: number;
+  paymentMethodId?: number;
+}
+
+export interface IGetExpenseStatsPerDay {
+  startDate: string;
+  endDate: string;
   categoryId?: number;
   paymentMethodId?: number;
 }
@@ -65,6 +79,26 @@ export class ExpenseService extends ApiClient {
       amount: expense.amount,
       expense_date: expense.expenseDate,
     });
+  }
+
+  async getTotalPerDay({
+    startDate,
+    endDate,
+    categoryId,
+    paymentMethodId,
+  }: IGetExpenseStatsPerDay): Promise<
+    IServerResponse<IExpenseStatsPerDayAPIData[]>
+  > {
+    const queryParams = new URLSearchParams();
+    if (startDate) queryParams.set("start_date", startDate);
+    if (endDate) queryParams.set("end_date", endDate);
+    if (categoryId) queryParams.set("category_id", categoryId.toString());
+    if (paymentMethodId)
+      queryParams.set("payment_method_id", paymentMethodId.toString());
+
+    return this.get<IExpenseStatsPerDayAPIData[]>(
+      `/expenses/stats/total-per-day?${queryParams.toString()}`
+    );
   }
 }
 

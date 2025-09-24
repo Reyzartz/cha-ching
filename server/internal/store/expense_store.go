@@ -333,7 +333,7 @@ func (pg *PostgresExpenseStore) ListExpensesTotalPerDay(userID int64, queryParam
 		($4::int IS NULL OR e.category_id = $4) AND
 		($5::int IS NULL OR e.payment_method_id = $5)
 	GROUP BY formatted_date
-	ORDER BY formatted_date DESC
+	ORDER BY formatted_date
 	`
 
 	ctx, cancel := context.WithCancel(context.Background())

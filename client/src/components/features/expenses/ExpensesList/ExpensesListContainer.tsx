@@ -1,9 +1,10 @@
 import { memo, useCallback, useState } from "react";
-import { ExpensesList } from ".";
+import { ExpensesList } from "../ExpensesList";
 import { View, ActivityIndicator, Text, ScrollView } from "react-native";
 import { useExpenses, useCategories, usePaymentMethods } from "@/hooks";
 import { DateRange, DateRangeFilter } from "./DateRangeFilter";
 import { Select } from "@/components/ui/Select";
+import ExpensesLineChart from "../ExpensesLineChart";
 
 const ExpensesListContainer = memo(() => {
   const [dateRange, setDateRange] = useState<DateRange>({});
@@ -54,19 +55,13 @@ const ExpensesListContainer = memo(() => {
   }
 
   return (
-    <View className="w-full items-center p-4 h-full gap-2">
+    <View className="w-full items-start p-4 h-full gap-2">
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         className="flex-grow-0 self-start"
         contentContainerClassName="items-center gap-2"
       >
-        <DateRangeFilter
-          label="Date Range"
-          value={dateRange}
-          onChange={setDateRange}
-        />
-
         <Select
           label="Category"
           value={categoryId}
@@ -83,6 +78,13 @@ const ExpensesListContainer = memo(() => {
           onChange={(id) => setPaymentMethodId(id === 0 ? undefined : id)}
         />
       </ScrollView>
+
+      <ExpensesLineChart
+        categoryId={categoryId}
+        paymentMethodId={paymentMethodId}
+      />
+
+      <DateRangeFilter value={dateRange} onChange={setDateRange} />
 
       <ExpensesList
         expenses={expenses}
