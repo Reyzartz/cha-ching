@@ -106,7 +106,7 @@ func (eh *ExpenseHandler) HandleGetAllExpenses(w http.ResponseWriter, r *http.Re
 		queryParams.Page = &defaultPage
 	}
 
-	expenses, paginationData, relatedItems, err := eh.expenseStore.ListExpensesByUserID(userID, queryParams)
+	expenses, paginationData, relatedItems, metaItems, err := eh.expenseStore.ListExpensesByUserID(userID, queryParams)
 	if err != nil {
 		eh.logger.Printf("ERROR: ListExpensesByUserID: %v", err)
 		utils.WriteJSONResponse(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})
@@ -117,6 +117,7 @@ func (eh *ExpenseHandler) HandleGetAllExpenses(w http.ResponseWriter, r *http.Re
 		"data":          expenses,
 		"pagination":    paginationData,
 		"related_items": relatedItems,
+		"meta":          metaItems,
 	})
 }
 

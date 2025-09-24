@@ -49,8 +49,12 @@ type ExpenseRelatedItems struct {
 	PaymentMethods map[int]*PaymentMethod `json:"payment_methods"`
 }
 
+type ExpenseMetaItems struct {
+	TotalAmount float64 `json:"total_amount"`
+	TotalCount  int     `json:"total_count"`
+}
+
 type ExpensePaginationData struct {
-	TotalItems   int  `json:"total_items"`
 	TotalPages   int  `json:"total_pages"`
 	CurrentPage  int  `json:"current_page"`
 	ItemsPerPage int  `json:"items_per_page"`
@@ -75,7 +79,7 @@ type ExpenseStore interface {
 
 	// // Expense methods
 	CreateExpense(expense *Expense) (*Expense, error)
-	ListExpensesByUserID(userID int64, queryParams ExpenseQueryParams) ([]*Expense, *ExpensePaginationData, *ExpenseRelatedItems, error)
+	ListExpensesByUserID(userID int64, queryParams ExpenseQueryParams) ([]*Expense, *ExpensePaginationData, *ExpenseRelatedItems, *ExpenseMetaItems, error)
 	ListExpensesTotalPerDay(userID int64, queryParams ExpenseTotalPerDayQueryParams) ([]*ExpenseTotalPerDay, error)
 }
 
@@ -166,14 +170,21 @@ func (pg *PostgresExpenseStore) CreateExpense(expense *Expense) (*Expense, error
 
 	return expense, nil
 }
-func (pg *PostgresExpenseStore) ListExpensesByUserID(userID int64, queryParams ExpenseQueryParams) ([]*Expense, *ExpensePaginationData, *ExpenseRelatedItems, error) {
+func (pg *PostgresExpenseStore) ListExpensesByUserID(userID int64, queryParams ExpenseQueryParams) (
+	[]*Expense,
+	*ExpensePaginationData,
+	*ExpenseRelatedItems,
+	*ExpenseMetaItems,
+	error,
+) {
 	var expenses []*Expense = []*Expense{}
 	var categories = make(map[int]*Category)
 	var paymentMethods = make(map[int]*PaymentMethod)
+	var metaItems = ExpenseMetaItems{}
 
 	// Get total count first
 	countQuery := `
-		SELECT COUNT(*) 
+		SELECT COUNT(*), COALESCE(SUM(e.amount), 0) AS total_amount
 		FROM expenses e
 		WHERE e.user_id = $1 AND
 		($2::text IS NULL OR (e.expense_date AT TIME ZONE 'Asia/Kolkata') >= ($2::timestamp AT TIME ZONE 'Asia/Kolkata')) AND
@@ -182,7 +193,6 @@ func (pg *PostgresExpenseStore) ListExpensesByUserID(userID int64, queryParams E
 		($5::int IS NULL OR e.payment_method_id = $5)
 	`
 
-	var totalItems int
 	var startDate, endDate *string
 
 	if queryParams.StartDate != nil {
@@ -204,14 +214,14 @@ func (pg *PostgresExpenseStore) ListExpensesByUserID(userID int64, queryParams E
 		startDate,
 		endDate,
 		queryParams.CategoryID,
-		queryParams.PaymentMethodID).Scan(&totalItems)
+		queryParams.PaymentMethodID).Scan(&metaItems.TotalCount, &metaItems.TotalAmount)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
 
 	// Calculate pagination data
 	itemsPerPage := *queryParams.Limit
-	totalPages := (totalItems + itemsPerPage - 1) / itemsPerPage
+	totalPages := (metaItems.TotalCount + itemsPerPage - 1) / itemsPerPage
 	currentPage := *queryParams.Page
 	var nextPage, prevPage *int
 	if currentPage+1 <= totalPages {
@@ -225,7 +235,6 @@ func (pg *PostgresExpenseStore) ListExpensesByUserID(userID int64, queryParams E
 	}
 
 	paginationData := &ExpensePaginationData{
-		TotalItems:   totalItems,
 		TotalPages:   totalPages,
 		CurrentPage:  currentPage,
 		ItemsPerPage: itemsPerPage,
@@ -276,7 +285,7 @@ func (pg *PostgresExpenseStore) ListExpensesByUserID(userID int64, queryParams E
 	)
 
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
 
 	defer rows.Close()
@@ -299,7 +308,7 @@ func (pg *PostgresExpenseStore) ListExpensesByUserID(userID int64, queryParams E
 			&paymentMethod.Name,
 		)
 		if err != nil {
-			return nil, nil, nil, err
+			return nil, nil, nil, nil, err
 		}
 
 		expenses = append(expenses, &expense)
@@ -308,13 +317,13 @@ func (pg *PostgresExpenseStore) ListExpensesByUserID(userID int64, queryParams E
 	}
 
 	if err = rows.Err(); err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
 
 	return expenses, paginationData, &ExpenseRelatedItems{
 		Categories:     categories,
 		PaymentMethods: paymentMethods,
-	}, nil
+	}, &metaItems, nil
 }
 
 func (pg *PostgresExpenseStore) ListExpensesTotalPerDay(userID int64, queryParams ExpenseTotalPerDayQueryParams) ([]*ExpenseTotalPerDay, error) {
