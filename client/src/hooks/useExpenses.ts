@@ -100,6 +100,12 @@ export function useExpenses(filters?: IExpenseFilters) {
       queryClient.invalidateQueries({
         queryKey: queryKeys.expenses,
       });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.categories,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.paymentMethods,
+      });
     },
   });
 

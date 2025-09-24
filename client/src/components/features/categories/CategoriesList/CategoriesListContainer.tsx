@@ -2,6 +2,7 @@ import { memo } from "react";
 import { View, ActivityIndicator, Text } from "react-native";
 import { useCategoriesStats } from "@/hooks";
 import { CategoriesList } from ".";
+import CategoriesDonutChart from "../CategoriesDonutChart";
 
 const CategoriesListContainer = memo(() => {
   const { categoriesStats, loading, error } = useCategoriesStats();
@@ -22,7 +23,12 @@ const CategoriesListContainer = memo(() => {
     );
   }
 
-  return <CategoriesList categoriesStats={categoriesStats} />;
+  return (
+    <View className="flex-1">
+      <CategoriesDonutChart categoriesStats={categoriesStats} />
+      <CategoriesList categoriesStats={categoriesStats} />
+    </View>
+  );
 });
 
 CategoriesListContainer.displayName = "CategoriesListContainer";

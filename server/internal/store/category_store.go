@@ -98,9 +98,9 @@ func (pg *PostgresCategoryStore) CategoryStats() ([]*CategoryStat, error) {
 	categoryStats := []*CategoryStat{}
 
 	query := `
-	SELECT c.id, c.name, SUM(e.amount) as total_amount
+	SELECT c.id, c.name, COALESCE(SUM(e.amount), 0) as total_amount
 	FROM categories c
-	JOIN expenses e 
+	LEFT JOIN expenses e 
 	ON c.id = e.category_id
 	GROUP BY c.id, c.name
 	ORDER BY total_amount DESC`

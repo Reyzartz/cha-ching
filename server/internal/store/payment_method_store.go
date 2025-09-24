@@ -97,9 +97,9 @@ func (pg *PostgresPaymentMethodStore) PaymentMethodStats() ([]*PaymentMethodStat
 	paymentMethods := []*PaymentMethodStats{}
 
 	query := `
-	SELECT pm.id, pm.name, SUM(e.amount) as total_amount
+	SELECT pm.id, pm.name, COALESCE(SUM(e.amount), 0) as total_amount
 	FROM payment_methods pm
-	JOIN expenses e
+	LEFT JOIN expenses e
 	ON pm.id = e.payment_method_id
 	GROUP BY pm.id, pm.name
 	ORDER BY total_amount DESC`
