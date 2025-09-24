@@ -8,6 +8,7 @@ import {
   expenseService,
   ICreateExpensePayload,
   IExpenseAPIData,
+  IExpenseMetaItems,
   IExpenseRelatedItems,
   IGetExpensesParams,
 } from "@/services/api/expense";
@@ -21,6 +22,7 @@ import {
   endOfMonth,
   format,
 } from "date-fns";
+import { useMemo } from "react";
 
 export interface IExpense {
   id: number;
@@ -101,10 +103,23 @@ export function useExpenses(filters?: IExpenseFilters) {
     },
   });
 
-  const expenses = data?.pages.flatMap((page) => page.data) ?? [];
+  const expenses = useMemo(
+    () => data?.pages.flatMap((page) => page.data) ?? [],
+    [data]
+  );
+
+  const expensesMeta = useMemo<IExpenseMetaItems>(() => {
+    return (
+      data?.pages[0]?.meta ?? {
+        total_amount: 0,
+        total_count: 0,
+      }
+    );
+  }, [data]);
 
   return {
     expenses,
+    expensesMeta,
     loading: isLoading,
     error,
     createExpense,

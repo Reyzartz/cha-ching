@@ -1,7 +1,6 @@
 import { ApiClient, IRelatedItems, IServerResponse } from "./base";
 import { ICategoryAPIData } from "./category";
 import { IPaymentMethodAPIData } from "./payment-method";
-import { startOfWeek, endOfWeek, format } from "date-fns";
 
 export interface IExpenseAPIData {
   id: number;
@@ -11,6 +10,11 @@ export interface IExpenseAPIData {
   title: string;
   amount: number;
   expense_date: string;
+}
+
+export interface IExpenseMetaItems {
+  total_count: number;
+  total_amount: number;
 }
 
 export interface IExpenseStatsPerDayAPIData {
@@ -52,7 +56,9 @@ export interface IGetExpenseStatsPerDay {
 export class ExpenseService extends ApiClient {
   async getExpenses(
     params: IGetExpensesParams = {}
-  ): Promise<IServerResponse<IExpenseAPIData[], IExpenseRelatedItems>> {
+  ): Promise<
+    IServerResponse<IExpenseAPIData[], IExpenseRelatedItems, IExpenseMetaItems>
+  > {
     const queryParams = new URLSearchParams();
     if (params.limit) queryParams.set("limit", params.limit.toString());
     if (params.page) queryParams.set("page", params.page.toString());
@@ -63,7 +69,7 @@ export class ExpenseService extends ApiClient {
     if (params.paymentMethodId)
       queryParams.set("payment_method_id", params.paymentMethodId.toString());
 
-    return this.get<IExpenseAPIData[], IExpenseRelatedItems>(
+    return this.get<IExpenseAPIData[], IExpenseRelatedItems, IExpenseMetaItems>(
       `/expenses?${queryParams.toString()}`
     );
   }

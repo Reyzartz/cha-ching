@@ -9,16 +9,15 @@ import ExpensesLineChart from "../ExpensesLineChart";
 const ExpensesListContainer = memo(() => {
   const [dateRange, setDateRange] = useState<DateRange>({});
 
-  const [categoryId, setCategoryId] = useState<number | undefined>(undefined);
-  const [paymentMethodId, setPaymentMethodId] = useState<number | undefined>(
-    undefined
-  );
+  const [categoryId, setCategoryId] = useState<number | undefined>();
+  const [paymentMethodId, setPaymentMethodId] = useState<number | undefined>();
 
   const { categories } = useCategories();
   const { paymentMethods } = usePaymentMethods();
 
   const {
     expenses,
+    expensesMeta,
     loading,
     error,
     hasNextPage,
@@ -56,6 +55,12 @@ const ExpensesListContainer = memo(() => {
 
   return (
     <View className="w-full items-start p-4 h-full gap-2">
+      <Text className="font-bold text-4xl text-gray-700 text-center mb-2">
+        ₹{expensesMeta.total_amount.toFixed(2)}
+      </Text>
+
+      <ExpensesLineChart paymentMethodId={paymentMethodId} />
+
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -63,7 +68,6 @@ const ExpensesListContainer = memo(() => {
         contentContainerClassName="items-center gap-2"
       >
         <Select
-          label="Category"
           value={categoryId}
           items={[{ id: 0, name: "All Categories" }, ...categories]}
           placeholder="All Categories"
@@ -71,20 +75,14 @@ const ExpensesListContainer = memo(() => {
         />
 
         <Select
-          label="Payment Method"
           value={paymentMethodId}
           items={[{ id: 0, name: "All Methods" }, ...paymentMethods]}
           placeholder="All Methods"
           onChange={(id) => setPaymentMethodId(id === 0 ? undefined : id)}
         />
+
+        <DateRangeFilter value={dateRange} onChange={setDateRange} />
       </ScrollView>
-
-      <ExpensesLineChart
-        categoryId={categoryId}
-        paymentMethodId={paymentMethodId}
-      />
-
-      <DateRangeFilter value={dateRange} onChange={setDateRange} />
 
       <ExpensesList
         expenses={expenses}

@@ -7,6 +7,10 @@ export interface IRelatedItems {
   };
 }
 
+export interface IMetaItems {
+  [key: string]: any;
+}
+
 export interface IPaginationData {
   total_pages: number;
   current_page: number;
@@ -15,11 +19,16 @@ export interface IPaginationData {
   prev_page: number | null;
 }
 
-export interface IServerResponse<T, R extends IRelatedItems = IRelatedItems> {
+export interface IServerResponse<
+  T,
+  R extends IRelatedItems = IRelatedItems,
+  M extends IMetaItems = IMetaItems,
+> {
   data: T;
   error?: string;
   related_items?: R;
   pagination?: IPaginationData;
+  meta?: M;
 }
 
 export class ApiClient {
@@ -57,19 +66,22 @@ export class ApiClient {
     );
   }
 
-  protected async get<T, R extends IRelatedItems = IRelatedItems>(
-    endpoint: string
-  ): Promise<IServerResponse<T, R>> {
-    const { data } = await this.client.get<IServerResponse<T, R>>(endpoint);
+  protected async get<
+    T,
+    R extends IRelatedItems = IRelatedItems,
+    M extends IMetaItems = IMetaItems,
+  >(endpoint: string): Promise<IServerResponse<T, R, M>> {
+    const { data } = await this.client.get<IServerResponse<T, R, M>>(endpoint);
 
     return data;
   }
 
-  protected async post<T, R extends IRelatedItems = IRelatedItems>(
-    endpoint: string,
-    payload: any
-  ): Promise<IServerResponse<T, R>> {
-    const { data } = await this.client.post<IServerResponse<T, R>>(
+  protected async post<
+    T,
+    R extends IRelatedItems = IRelatedItems,
+    M extends IMetaItems = IMetaItems,
+  >(endpoint: string, payload: any): Promise<IServerResponse<T, R, M>> {
+    const { data } = await this.client.post<IServerResponse<T, R, M>>(
       endpoint,
       payload
     );
