@@ -88,4 +88,17 @@ export class ApiClient {
 
     return data;
   }
+
+  protected async put<
+    T,
+    R extends IRelatedItems = IRelatedItems,
+    M extends IMetaItems = IMetaItems,
+  >(endpoint: string, payload: any): Promise<IServerResponse<T, R, M>> {
+    const { data } = await this.client.put<IServerResponse<T, R, M>>(
+      endpoint,
+      payload
+    );
+
+    return data;
+  }
 }

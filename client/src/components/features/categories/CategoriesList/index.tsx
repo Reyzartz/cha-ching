@@ -6,10 +6,11 @@ import { CategoryItem } from "./CategoryItem";
 
 export interface CategoriesListProps {
   categoriesStats: ICategoryStats[];
+  onEditCategory: (category: ICategoryStats) => void;
 }
 
 const CategoriesList = memo<CategoriesListProps>(
-  ({ categoriesStats: categories }) => {
+  ({ categoriesStats: categories, onEditCategory }) => {
     if (categories.length === 0) {
       return (
         <Card className="flex-1 justify-center items-center w-full">
@@ -27,7 +28,9 @@ const CategoriesList = memo<CategoriesListProps>(
       <FlatList
         className="flex-1 w-full px-4"
         data={categories}
-        renderItem={({ item }) => <CategoryItem category={item} />}
+        renderItem={({ item }) => (
+          <CategoryItem category={item} onEdit={() => onEditCategory(item)} />
+        )}
         keyExtractor={(item) => item.id.toString()}
         ItemSeparatorComponent={() => <View className="h-2" />}
         contentContainerStyle={{ paddingVertical: 16 }}

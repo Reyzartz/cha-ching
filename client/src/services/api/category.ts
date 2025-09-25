@@ -15,6 +15,11 @@ export interface ICreateCategoryPayload {
   name: string;
 }
 
+export interface IUpdateCategoryPayload {
+  id: number;
+  name: string;
+}
+
 export class CategoryService extends ApiClient {
   async getCategories(): Promise<IServerResponse<ICategoryAPIData[]>> {
     return this.get<ICategoryAPIData[]>("/categories");
@@ -24,6 +29,12 @@ export class CategoryService extends ApiClient {
     category: ICreateCategoryPayload
   ): Promise<IServerResponse<ICategoryAPIData>> {
     return this.post<ICategoryAPIData>("/categories", category);
+  }
+
+  async updateCategory(
+    category: IUpdateCategoryPayload
+  ): Promise<IServerResponse<ICategoryAPIData>> {
+    return this.put<ICategoryAPIData>("/categories", category);
   }
 
   async getCategoriesStats() {

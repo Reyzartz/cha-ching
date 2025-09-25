@@ -4,6 +4,7 @@ import {
   categoryService,
   ICategoryStatsAPIData,
   ICreateCategoryPayload,
+  IUpdateCategoryPayload,
 } from "@/services/api/category";
 import { queryKeys } from "@/constants/queryKeys";
 export interface ICategoryStats {
@@ -61,10 +62,21 @@ export function useCategories() {
     },
   });
 
+  const { mutateAsync: updateCategory } = useMutation({
+    mutationFn: (category: IUpdateCategoryPayload) =>
+      categoryService.updateCategory(category),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.categories,
+      });
+    },
+  });
+
   return {
     categories,
     loading: isLoading,
     error,
+    updateCategory,
     createCategory,
   };
 }
