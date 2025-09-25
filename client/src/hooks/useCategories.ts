@@ -10,6 +10,7 @@ import { queryKeys } from "@/constants/queryKeys";
 export interface ICategoryStats {
   id: number;
   name: string;
+  budget: number;
   totalAmount: number;
 }
 
@@ -17,6 +18,7 @@ const mapCategoryStats = (data: ICategoryStatsAPIData): ICategoryStats => {
   return {
     id: data.id,
     name: data.name,
+    budget: data.budget,
     totalAmount: data.total_amount,
   };
 };
@@ -37,6 +39,7 @@ export function useCategoriesStats() {
 export interface ICategory {
   id: number;
   name: string;
+  budget: number;
 }
 
 export function useCategories() {

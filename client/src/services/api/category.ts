@@ -3,21 +3,25 @@ import { ApiClient, IServerResponse } from "./base";
 export interface ICategoryAPIData {
   id: number;
   name: string;
+  budget: number;
 }
 
 export interface ICategoryStatsAPIData {
   id: number;
   name: string;
+  budget: number;
   total_amount: number;
 }
 
 export interface ICreateCategoryPayload {
   name: string;
+  budget: number;
 }
 
 export interface IUpdateCategoryPayload {
   id: number;
   name: string;
+  budget: number;
 }
 
 export class CategoryService extends ApiClient {

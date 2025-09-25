@@ -4,3 +4,5 @@ export { Modal } from "./Modal";
 export { Card } from "./Card";
 export { Icon } from "./Icon";
 export { Select } from "./Select";
+
+export { ProgressBar } from "./ProgressBar";
