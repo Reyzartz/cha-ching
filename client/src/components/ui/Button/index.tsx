@@ -20,28 +20,28 @@ const Button = memo<ButtonProps>(
     const getVariantStyles = () => {
       switch (variant) {
         case "primary":
-          return "bg-blue-500 active:bg-blue-600";
+          return "bg-blue-500 active:bg-blue-600 text-sm";
         case "secondary":
-          return "bg-gray-500 active:bg-gray-600";
+          return "bg-gray-100 active:bg-gray-200 text-sm";
         case "outline":
-          return "border border-blue-500 active:bg-blue-50";
+          return "border border-blue-200 active:bg-blue-50 text-sm";
         case "ghost":
-          return "active:bg-gray-100";
+          return "active:bg-gray-100 text-sm";
         default:
-          return "bg-blue-500 active:bg-blue-600";
+          return "bg-blue-500 active:bg-blue-600 text-sm";
       }
     };
 
     const getSizeStyles = () => {
       switch (size) {
         case "sm":
-          return "px-3 py-2";
+          return "px-2 py-1 text-sm";
         case "md":
-          return "px-4 py-3";
+          return "px-3 py-2 text-sm";
         case "lg":
-          return "px-6 py-4";
+          return "px-4 py-2 text-base";
         default:
-          return "px-4 py-3";
+          return "px-3 py-2 text-sm";
       }
     };
 

@@ -95,9 +95,12 @@ const ExpensesLineChart: React.FC<ExpensesLineChartProps> = ({
         withDots={false}
         yAxisInterval={100000}
         withVerticalLines={false}
-        formatYLabel={(y) =>
-          Number(y) > 1000 ? `${(Number(y) / 1000).toFixed(1)}K` : y
-        }
+        formatYLabel={(y) => {
+          const value = Number(y);
+          return value > 1000
+            ? `${(value / 1000).toFixed(0)}K`
+            : value.toFixed(0);
+        }}
         hidePointsAtIndex={
           range === "current_month"
             ? amounts
@@ -105,15 +108,13 @@ const ExpensesLineChart: React.FC<ExpensesLineChartProps> = ({
                 .filter((idx) => idx !== -1)
             : []
         }
-        verticalLabelRotation={-25}
+        verticalLabelRotation={45}
         yAxisLabel="₹"
+        bezier
+        transparent
         chartConfig={{
-          backgroundColor: "#fff",
-          backgroundGradientFrom: "#fff",
-          backgroundGradientTo: "#fff",
           color: (opacity = 1) => `rgba(0, 122, 255, ${opacity})`,
           labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-          paddingTop: 16,
         }}
         style={{ borderRadius: 8 }}
       />

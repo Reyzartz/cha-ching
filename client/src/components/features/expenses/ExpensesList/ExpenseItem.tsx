@@ -1,5 +1,6 @@
 import { memo, useMemo } from "react";
 import { Text, View } from "react-native";
+import { formatINR } from "@/utils/formatINR";
 import { Card } from "@/components/ui";
 import { IExpense } from "@/hooks";
 
@@ -17,24 +18,26 @@ const ExpenseItem = memo<ExpenseItemProps>(({ expense }) => {
   }, [expense.expenseDate]);
 
   return (
-    <Card className="w-full" padding="sm">
-      <View className="flex-row justify-between items-center gap-4">
-        <View className="w-12 h-12 p-1 border border-gray-200 rounded-lg items-center justify-center">
-          <Text className="text-sm text-gray-500 text-center">{dateLabel}</Text>
+    <Card className="w-full border border-gray-200 bg-white p-2" padding="none">
+      <View className="flex-row items-center w-full gap-2">
+        <View className="w-10 h-10 border border-gray-100 rounded bg-gray-50 items-center justify-center mr-2">
+          <Text className="text-xs text-gray-400 text-center px-2">
+            {dateLabel}
+          </Text>
         </View>
-
-        <View className="flex-col gap-1 flex-1">
-          <Text className="font-semibold text-gray-900">
+        <View className="flex-1 min-w-0">
+          <Text className="font-medium text-gray-900 text-sm" numberOfLines={1}>
             {expense.category?.name}
           </Text>
-          <Text className="text-gray-400 text-xs">{expense.title}</Text>
-        </View>
-
-        <View className="flex-col items-end gap-1">
-          <Text className="text-lg font-semibold text-red-500">
-            ₹{expense.amount} ⤵
+          <Text className="text-gray-400 text-xs truncate" numberOfLines={1}>
+            {expense.title}
           </Text>
-          <Text className="text-xs text-gray-500">
+        </View>
+        <View className="items-end ml-2">
+          <Text className="text-sm font-semibold text-red-500">
+            {formatINR(expense.amount)}
+          </Text>
+          <Text className="text-xs text-gray-400" numberOfLines={1}>
             {expense.paymentMethod?.name}
           </Text>
         </View>

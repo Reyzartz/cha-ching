@@ -36,7 +36,7 @@ const ExpensesList = memo<ExpensesListProps>(
         data={expenses}
         renderItem={({ item }) => <ExpenseItem expense={item} />}
         keyExtractor={(item) => item.id.toString()}
-        ItemSeparatorComponent={() => <View className="h-2" />}
+        ItemSeparatorComponent={() => <View className="h-1" />}
         contentContainerStyle={{ paddingBottom: 24 }}
         onEndReached={onEndReached}
         onEndReachedThreshold={0.2}

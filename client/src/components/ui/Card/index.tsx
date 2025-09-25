@@ -42,12 +42,12 @@ const Card = memo<CardProps>(
     };
 
     const cardStyles = `
-    bg-white 
-    rounded-lg 
-    ${getVariantStyles()} 
-    ${getPaddingStyles()}
-    ${className}
-  `
+      bg-white
+      rounded-md
+      ${getVariantStyles()}
+      ${getPaddingStyles()}
+      ${className}
+    `
       .trim()
       .replace(/\s+/g, " ");
 

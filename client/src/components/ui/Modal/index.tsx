@@ -41,7 +41,7 @@ const Modal = memo(
               })
             }
           >
-            <View className="rounded-lg overflow-hidden bg-white h-3/4">
+            <View className="rounded-md overflow-hidden bg-white h-3/4 border border-gray-100">
               {children}
             </View>
           </View>
@@ -60,8 +60,8 @@ interface IModalHeaderProps {
 const Header = memo(({ title }: PropsWithChildren<IModalHeaderProps>) => {
   const { onClose } = useContext(ModalContext);
   return (
-    <View className="flex-row justify-between items-center px-5 py-3 bg-white border-b border-gray-200">
-      <Text className="text-lg font-semibold">{title}</Text>
+    <View className="flex-row justify-between items-center px-3 py-2 bg-white border-b border-gray-100">
+      <Text className="text-base font-semibold text-gray-900">{title}</Text>
 
       <Pressable onPress={onClose}>
         <Icon name="close" size={20} color="#aaa" />
@@ -73,14 +73,14 @@ const Header = memo(({ title }: PropsWithChildren<IModalHeaderProps>) => {
 Header.displayName = "Header";
 
 const Body = memo(({ children }: PropsWithChildren) => {
-  return <View className="flex-1 p-5 flex-shrink-0">{children}</View>;
+  return <View className="flex-1 p-3 flex-shrink-0">{children}</View>;
 });
 
 Body.displayName = "Body";
 
 const Footer = memo(({ children }: PropsWithChildren) => {
   return (
-    <View className="flex-row px-5 py-3 bg-white border-t border-gray-200 justify-end gap-2">
+    <View className="flex-row px-3 py-2 bg-white border-t border-gray-100 justify-end gap-2">
       {children}
     </View>
   );

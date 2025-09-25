@@ -1,4 +1,5 @@
 import { memo, useMemo } from "react";
+import { formatINR } from "@/utils/formatINR";
 import { Pressable, Text, View } from "react-native";
 import { Card } from "@/components/ui";
 import { ProgressBar } from "@/components/ui/ProgressBar";
@@ -37,7 +38,7 @@ const CategoryItem = memo<CategoryItemProps>(({ category, onEdit }) => {
             {category.name}
           </Text>
           <Text className="text-sm font-semibold text-blue-600">
-            ₹{category.budget.toFixed(2)}
+            {formatINR(category.budget)}
           </Text>
         </View>
         <ProgressBar
@@ -48,7 +49,7 @@ const CategoryItem = memo<CategoryItemProps>(({ category, onEdit }) => {
         />
         <View className="flex-row justify-between items-center w-full mt-0.5">
           <Text className="text-xs text-gray-400">
-            ₹{category.totalAmount.toFixed(2)} spent
+            {formatINR(category.totalAmount)} spent
           </Text>
           <Text
             className="text-xs font-semibold"

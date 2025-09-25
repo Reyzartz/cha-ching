@@ -11,7 +11,7 @@ const Input = memo(
   forwardRef<TextInput, InputProps>(
     ({ label, error, helperText, className = "", ...props }, ref) => {
       return (
-        <View style={{ minWidth: 160 }}>
+        <View style={{ minWidth: 120 }}>
           {label && (
             <Text className="font-medium text-xs text-gray-600 mb-0.5">
               {label}
@@ -20,7 +20,7 @@ const Input = memo(
 
           <TextInput
             ref={ref}
-            className={`border px-3 py-2 border-gray-200 rounded-md bg-white text-gray-700 
+            className={`border px-2 py-1 border-gray-200 rounded bg-white text-gray-700 text-sm
               ${error ? "border-red-500" : "border-gray-200 focus:border-blue-500"}
               ${className}
             `}
@@ -30,7 +30,7 @@ const Input = memo(
 
           {(error || helperText) && (
             <Text
-              className={`text-sm mt-1 ${error ? "text-red-500" : "text-gray-500"}`}
+              className={`text-xs mt-1 ${error ? "text-red-500" : "text-gray-500"}`}
             >
               {error || helperText}
             </Text>
