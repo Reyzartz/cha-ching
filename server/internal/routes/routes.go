@@ -31,6 +31,7 @@ func RegisterRoutes(app *app.Application) *chi.Mux {
 	r.Post("/categories", app.CategoryHandler.HandleCreateCategory)
 	r.Get("/categories", app.CategoryHandler.HandleGetAllCategories)
 	r.Get("/categories/stats", app.CategoryHandler.HandleGetCategoryStats)
+	r.Put("/categories", app.CategoryHandler.HandleUpdateCategory)
 
 	// Payment method endpoints
 	r.Post("/payment-methods", app.PaymentMethodHandler.HandleCreatePaymentMethod)

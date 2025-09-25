@@ -28,6 +28,7 @@ func NewPostgresCategoryStore(db *sql.DB) *PostgresCategoryStore {
 
 type CategoryStore interface {
 	CreateCategory(category *Category) (*Category, error)
+	UpdateCategory(category *Category) (*Category, error)
 	ListCategories() ([]*Category, error)
 	CategoryStats() ([]*CategoryStat, error)
 }
@@ -49,6 +50,40 @@ func (pg *PostgresCategoryStore) CreateCategory(category *Category) (*Category, 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	err = tx.QueryRowContext(ctx, query, category.Name).Scan(&category.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return nil, err
+	}
+
+	return category, nil
+}
+
+func (pg *PostgresCategoryStore) UpdateCategory(category *Category) (*Category, error) {
+	tx, err := pg.db.Begin()
+	if err != nil {
+		return nil, err
+	}
+
+	defer tx.Rollback()
+
+	query := `
+	UPDATE categories
+	SET	name=$1
+	WHERE id=$2
+	RETURNING id
+	`
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	err = tx.QueryRowContext(ctx, query, category.Name, category.ID).Scan(&category.ID)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+
 	if err != nil {
 		return nil, err
 	}

@@ -41,6 +41,33 @@ func (ch *CategoryHandler) HandleCreateCategory(w http.ResponseWriter, r *http.R
 	})
 }
 
+func (ch *CategoryHandler) HandleUpdateCategory(w http.ResponseWriter, r *http.Request) {
+	var category store.Category
+
+	err := utils.ReadRequestBody(r, &category)
+	if err != nil {
+		ch.logger.Printf("ERROR: decoding update category request body: %v", err)
+		utils.WriteJSONResponse(w, http.StatusBadRequest, utils.Envelope{"error": "invalid request body"})
+		return
+	}
+
+	updatedCategory, err := ch.categoryStore.UpdateCategory(&category)
+	if err != nil {
+		ch.logger.Printf("ERROR: UpdateCategory: %v", err)
+		utils.WriteJSONResponse(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})
+		return
+	}
+
+	if updatedCategory == nil {
+		utils.WriteJSONResponse(w, http.StatusNotFound, utils.Envelope{"error": "category not found"})
+		return
+	}
+
+	utils.WriteJSONResponse(w, http.StatusOK, utils.Envelope{
+		"data": updatedCategory,
+	})
+}
+
 func (ch *CategoryHandler) HandleGetAllCategories(w http.ResponseWriter, r *http.Request) {
 	categories, err := ch.categoryStore.ListCategories()
 
