@@ -6,13 +6,15 @@ import (
 )
 
 type Category struct {
-	ID   int    `json:"id"`
-	Name string `json:"name"`
+	ID     int     `json:"id"`
+	Name   string  `json:"name"`
+	Budget float64 `json:"budget"`
 }
 
 type CategoryStat struct {
 	ID          int     `json:"id"`
 	Name        string  `json:"name"`
+	Budget      float64 `json:"budget"`
 	TotalAmount float64 `json:"total_amount"`
 }
 
@@ -42,14 +44,14 @@ func (pg *PostgresCategoryStore) CreateCategory(category *Category) (*Category, 
 	defer tx.Rollback()
 
 	query := `
-		INSERT INTO categories (name)
-		    VALUES ($1)
+		INSERT INTO categories (name, budget)
+		    VALUES ($1, $2)
 		RETURNING
 		    id`
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	err = tx.QueryRowContext(ctx, query, category.Name).Scan(&category.ID)
+	err = tx.QueryRowContext(ctx, query, category.Name, category.Budget).Scan(&category.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -72,14 +74,20 @@ func (pg *PostgresCategoryStore) UpdateCategory(category *Category) (*Category, 
 
 	query := `
 	UPDATE categories
-	SET	name=$1
-	WHERE id=$2
+	SET	name=$1 , budget=$2
+	WHERE id=$3
 	RETURNING id
 	`
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	err = tx.QueryRowContext(ctx, query, category.Name, category.ID).Scan(&category.ID)
+	err = tx.QueryRowContext(
+		ctx,
+		query,
+		category.Name,
+		category.Budget,
+		category.ID,
+	).Scan(&category.ID)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
@@ -100,7 +108,7 @@ func (pg *PostgresCategoryStore) ListCategories() ([]*Category, error) {
 	categories := []*Category{}
 
 	query := `
-		SELECT c.id, c.name
+		SELECT c.id, c.name, c.budget
 		FROM categories c
 		ORDER BY c.id`
 
@@ -115,7 +123,7 @@ func (pg *PostgresCategoryStore) ListCategories() ([]*Category, error) {
 
 	for rows.Next() {
 		var category Category
-		err := rows.Scan(&category.ID, &category.Name)
+		err := rows.Scan(&category.ID, &category.Name, &category.Budget)
 		if err != nil {
 			return nil, err
 		}
@@ -133,11 +141,11 @@ func (pg *PostgresCategoryStore) CategoryStats() ([]*CategoryStat, error) {
 	categoryStats := []*CategoryStat{}
 
 	query := `
-	SELECT c.id, c.name, COALESCE(SUM(e.amount), 0) as total_amount
+	SELECT c.id, c.name, c.budget, COALESCE(SUM(e.amount), 0) as total_amount
 	FROM categories c
 	LEFT JOIN expenses e 
 	ON c.id = e.category_id
-	GROUP BY c.id, c.name
+	GROUP BY c.id, c.name, c.budget
 	ORDER BY total_amount DESC`
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -154,6 +162,7 @@ func (pg *PostgresCategoryStore) CategoryStats() ([]*CategoryStat, error) {
 		err := rows.Scan(
 			&categoryStat.ID,
 			&categoryStat.Name,
+			&categoryStat.Budget,
 			&categoryStat.TotalAmount,
 		)
 		if err != nil {
