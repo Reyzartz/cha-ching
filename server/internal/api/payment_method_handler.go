@@ -55,7 +55,16 @@ func (ph *PaymentMethodHandler) HandleGetAllPaymentMethods(w http.ResponseWriter
 }
 
 func (ph *PaymentMethodHandler) HandleGetPaymentMethodStats(w http.ResponseWriter, r *http.Request) {
-	stats, err := ph.paymentMethodStore.PaymentMethodStats()
+	var queryParams store.PaymentMethodStatsQueryParams
+
+	err := utils.QueryParamsDecoder(r, &queryParams)
+	if err != nil {
+		ph.logger.Printf("ERROR: decoding payment method stats query params: %v", err)
+		utils.WriteJSONResponse(w, http.StatusBadRequest, utils.Envelope{"error": "invalid query params"})
+		return
+	}
+
+	stats, err := ph.paymentMethodStore.PaymentMethodStats(queryParams)
 	if err != nil {
 		ph.logger.Printf("ERROR: PaymentMethodStats: %v", err)
 		utils.WriteJSONResponse(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})

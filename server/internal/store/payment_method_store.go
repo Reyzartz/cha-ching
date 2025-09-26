@@ -1,6 +1,7 @@
 package store
 
 import (
+	"cha-ching-server/internal/utils"
 	"context"
 	"database/sql"
 )
@@ -10,9 +11,15 @@ type PaymentMethod struct {
 	Name string `json:"name"`
 }
 
+type PaymentMethodStatsQueryParams struct {
+	StartDate *string `schema:"start_date"`
+	EndDate   *string `schema:"end_date"`
+}
+
 type PaymentMethodStats struct {
 	ID          int     `json:"id"`
 	Name        string  `json:"name"`
+	Count       int     `json:"count"`
 	TotalAmount float64 `json:"total_amount"`
 }
 
@@ -29,7 +36,7 @@ func NewPostgresPaymentMethodStore(db *sql.DB) *PostgresPaymentMethodStore {
 type PaymentMethodStore interface {
 	CreatePaymentMethod(paymentMethod *PaymentMethod) (*PaymentMethod, error)
 	ListPaymentMethods() ([]*PaymentMethod, error)
-	PaymentMethodStats() ([]*PaymentMethodStats, error)
+	PaymentMethodStats(queryParams PaymentMethodStatsQueryParams) ([]*PaymentMethodStats, error)
 }
 
 func (pg *PostgresPaymentMethodStore) CreatePaymentMethod(paymentMethod *PaymentMethod) (*PaymentMethod, error) {
@@ -93,21 +100,26 @@ func (pg *PostgresPaymentMethodStore) ListPaymentMethods() ([]*PaymentMethod, er
 	return paymentMethods, nil
 }
 
-func (pg *PostgresPaymentMethodStore) PaymentMethodStats() ([]*PaymentMethodStats, error) {
+func (pg *PostgresPaymentMethodStore) PaymentMethodStats(queryParams PaymentMethodStatsQueryParams) ([]*PaymentMethodStats, error) {
 	paymentMethods := []*PaymentMethodStats{}
 
 	query := `
-	SELECT pm.id, pm.name, COALESCE(SUM(e.amount), 0) as total_amount
+	SELECT pm.id, pm.name, COALESCE(SUM(e.amount), 0) as total_amount, COUNT(e.id) as count
 	FROM payment_methods pm
 	LEFT JOIN expenses e
 	ON pm.id = e.payment_method_id
+	WHERE 
+		($1::text IS NULL OR e.expense_date >= ($1::timestamp AT TIME ZONE 'Asia/Kolkata')) AND
+		($2::text IS NULL OR e.expense_date <= ($2::timestamp AT TIME ZONE 'Asia/Kolkata')) 
 	GROUP BY pm.id, pm.name
 	ORDER BY total_amount DESC`
+
+	startDate, endDate := utils.FormatStartEndDate(queryParams.StartDate, queryParams.EndDate)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	rows, err := pg.db.QueryContext(ctx, query)
+	rows, err := pg.db.QueryContext(ctx, query, startDate, endDate)
 	if err != nil {
 		return nil, err
 	}
@@ -116,7 +128,12 @@ func (pg *PostgresPaymentMethodStore) PaymentMethodStats() ([]*PaymentMethodStat
 
 	for rows.Next() {
 		var paymentMethod PaymentMethodStats
-		err := rows.Scan(&paymentMethod.ID, &paymentMethod.Name, &paymentMethod.TotalAmount)
+		err := rows.Scan(
+			&paymentMethod.ID,
+			&paymentMethod.Name,
+			&paymentMethod.TotalAmount,
+			&paymentMethod.Count,
+		)
 		if err != nil {
 			return nil, err
 		}

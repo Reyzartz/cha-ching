@@ -96,16 +96,6 @@ func (eh *ExpenseHandler) HandleGetAllExpenses(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	// Set sensible defaults for pagination if not provided
-	defaultLimit := 10
-	defaultPage := 1
-	if queryParams.Limit == nil {
-		queryParams.Limit = &defaultLimit
-	}
-	if queryParams.Page == nil {
-		queryParams.Page = &defaultPage
-	}
-
 	expenses, paginationData, relatedItems, metaItems, err := eh.expenseStore.ListExpensesByUserID(userID, queryParams)
 	if err != nil {
 		eh.logger.Printf("ERROR: ListExpensesByUserID: %v", err)
@@ -134,7 +124,7 @@ func (eh *ExpenseHandler) HandleGetExpensesTotalPerDay(w http.ResponseWriter, r 
 		return
 	}
 
-	expenses, err := eh.expenseStore.ListExpensesTotalPerDay(userID, queryParams)
+	expenses, metaItems, err := eh.expenseStore.ListExpensesTotalPerDay(userID, queryParams)
 	if err != nil {
 		eh.logger.Printf("ERROR: ListExpensesTotalPerDay: %v", err)
 		utils.WriteJSONResponse(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})
@@ -143,5 +133,6 @@ func (eh *ExpenseHandler) HandleGetExpensesTotalPerDay(w http.ResponseWriter, r 
 
 	utils.WriteJSONResponse(w, http.StatusOK, utils.Envelope{
 		"data": expenses,
+		"meta": metaItems,
 	})
 }

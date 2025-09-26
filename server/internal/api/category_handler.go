@@ -83,8 +83,15 @@ func (ch *CategoryHandler) HandleGetAllCategories(w http.ResponseWriter, r *http
 }
 
 func (ch *CategoryHandler) HandleGetCategoryStats(w http.ResponseWriter, r *http.Request) {
-	stats, err := ch.categoryStore.CategoryStats()
+	var queryParams store.CategoryStatQueryParams
+	err := utils.QueryParamsDecoder(r, &queryParams)
+	if err != nil {
+		ch.logger.Printf("ERROR: QueryParamsDecoder: %v", err)
+		utils.WriteJSONResponse(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})
+		return
+	}
 
+	stats, err := ch.categoryStore.CategoryStats(queryParams)
 	if err != nil {
 		ch.logger.Printf("ERROR: CategoryStats: %v", err)
 		utils.WriteJSONResponse(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})

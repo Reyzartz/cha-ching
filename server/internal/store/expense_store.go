@@ -80,7 +80,7 @@ type ExpenseStore interface {
 	// // Expense methods
 	CreateExpense(expense *Expense) (*Expense, error)
 	ListExpensesByUserID(userID int64, queryParams ExpenseQueryParams) ([]*Expense, *ExpensePaginationData, *ExpenseRelatedItems, *ExpenseMetaItems, error)
-	ListExpensesTotalPerDay(userID int64, queryParams ExpenseTotalPerDayQueryParams) ([]*ExpenseTotalPerDay, error)
+	ListExpensesTotalPerDay(userID int64, queryParams ExpenseTotalPerDayQueryParams) ([]*ExpenseTotalPerDay, *ExpenseMetaItems, error)
 }
 
 func (pg *PostgresExpenseStore) CreateUser(user *User) (*User, error) {
@@ -170,6 +170,7 @@ func (pg *PostgresExpenseStore) CreateExpense(expense *Expense) (*Expense, error
 
 	return expense, nil
 }
+
 func (pg *PostgresExpenseStore) ListExpensesByUserID(userID int64, queryParams ExpenseQueryParams) (
 	[]*Expense,
 	*ExpensePaginationData,
@@ -180,49 +181,28 @@ func (pg *PostgresExpenseStore) ListExpensesByUserID(userID int64, queryParams E
 	var expenses []*Expense = []*Expense{}
 	var categories = make(map[int]*Category)
 	var paymentMethods = make(map[int]*PaymentMethod)
-	var metaItems = ExpenseMetaItems{}
 
-	// Get total count first
-	countQuery := `
-		SELECT COUNT(*), COALESCE(SUM(e.amount), 0) AS total_amount
-		FROM expenses e
-		WHERE e.user_id = $1 AND
-		($2::text IS NULL OR (e.expense_date AT TIME ZONE 'Asia/Kolkata') >= ($2::timestamp AT TIME ZONE 'Asia/Kolkata')) AND
-		($3::text IS NULL OR (e.expense_date AT TIME ZONE 'Asia/Kolkata') <= ($3::timestamp AT TIME ZONE 'Asia/Kolkata')) AND
-		($4::int IS NULL OR e.category_id = $4) AND
-		($5::int IS NULL OR e.payment_method_id = $5)
-	`
-
-	var startDate, endDate *string
-
-	if queryParams.StartDate != nil {
-		s := *queryParams.StartDate + " 00:00:00.000+05:30"
-		startDate = &s
-	}
-	if queryParams.EndDate != nil {
-		e := *queryParams.EndDate + " 23:59:59+05:30"
-		endDate = &e
-	}
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	err := pg.db.QueryRowContext(
-		ctx,
-		countQuery,
-		userID,
-		startDate,
-		endDate,
-		queryParams.CategoryID,
-		queryParams.PaymentMethodID).Scan(&metaItems.TotalCount, &metaItems.TotalAmount)
+	metaItems, err := pg.GetExpenseMetaItems(userID, queryParams)
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}
 
+	startDate, endDate := utils.FormatStartEndDate(queryParams.StartDate, queryParams.EndDate)
+
+	limit := 10
+	if queryParams.Limit != nil {
+		limit = *queryParams.Limit
+	}
+
+	page := 1
+	if queryParams.Page != nil {
+		page = *queryParams.Page
+	}
+
 	// Calculate pagination data
-	itemsPerPage := *queryParams.Limit
+	itemsPerPage := limit
 	totalPages := (metaItems.TotalCount + itemsPerPage - 1) / itemsPerPage
-	currentPage := *queryParams.Page
+	currentPage := page
 	var nextPage, prevPage *int
 	if currentPage+1 <= totalPages {
 		nextPage = new(int)
@@ -269,11 +249,11 @@ func (pg *PostgresExpenseStore) ListExpensesByUserID(userID int64, queryParams E
 
 	offset := utils.GetOffset(queryParams.Page, queryParams.Limit)
 
-	ctx2, cancel2 := context.WithCancel(context.Background())
-	defer cancel2()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	rows, err := pg.db.QueryContext(
-		ctx2,
+		ctx,
 		query,
 		userID,
 		startDate,
@@ -323,11 +303,59 @@ func (pg *PostgresExpenseStore) ListExpensesByUserID(userID int64, queryParams E
 	return expenses, paginationData, &ExpenseRelatedItems{
 		Categories:     categories,
 		PaymentMethods: paymentMethods,
-	}, &metaItems, nil
+	}, metaItems, nil
 }
 
-func (pg *PostgresExpenseStore) ListExpensesTotalPerDay(userID int64, queryParams ExpenseTotalPerDayQueryParams) ([]*ExpenseTotalPerDay, error) {
+func (pg *PostgresExpenseStore) GetExpenseMetaItems(userID int64, queryParams ExpenseQueryParams) (*ExpenseMetaItems, error) {
+	var metaItems = ExpenseMetaItems{}
+
+	// Get total count first
+	query := `
+		SELECT COUNT(*), COALESCE(SUM(e.amount), 0) AS total_amount
+		FROM expenses e
+		WHERE e.user_id = $1 AND
+		($2::text IS NULL OR e.expense_date >= ($2::timestamp AT TIME ZONE 'Asia/Kolkata')) AND
+		($3::text IS NULL OR e.expense_date <= ($3::timestamp AT TIME ZONE 'Asia/Kolkata')) AND
+		($4::int IS NULL OR e.category_id = $4) AND
+		($5::int IS NULL OR e.payment_method_id = $5)
+	`
+
+	startDate, endDate := utils.FormatStartEndDate(queryParams.StartDate, queryParams.EndDate)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	err := pg.db.QueryRowContext(
+		ctx,
+		query,
+		userID,
+		startDate,
+		endDate,
+		queryParams.CategoryID,
+		queryParams.PaymentMethodID).Scan(&metaItems.TotalCount, &metaItems.TotalAmount)
+	if err != nil {
+		return nil, err
+	}
+
+	return &metaItems, nil
+}
+
+func (pg *PostgresExpenseStore) ListExpensesTotalPerDay(userID int64, queryParams ExpenseTotalPerDayQueryParams) ([]*ExpenseTotalPerDay, *ExpenseMetaItems, error) {
 	var expenseTotalPerDays []*ExpenseTotalPerDay = []*ExpenseTotalPerDay{}
+	metaItems, err := pg.GetExpenseMetaItems(userID, ExpenseQueryParams{
+		StartDate:       queryParams.StartDate,
+		EndDate:         queryParams.EndDate,
+		CategoryID:      queryParams.CategoryID,
+		PaymentMethodID: queryParams.PaymentMethodID,
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+
+	startDate, endDate := utils.FormatStartEndDate(queryParams.StartDate, queryParams.EndDate)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	query := `
 	SELECT 
@@ -337,27 +365,13 @@ func (pg *PostgresExpenseStore) ListExpensesTotalPerDay(userID int64, queryParam
 	FROM expenses e
 	WHERE 
 		e.user_id = $1 AND
-		($2::timestamp IS NULL OR e.expense_date >= $2 AT TIME ZONE 'Asia/Kolkata') AND
-		($3::timestamp IS NULL OR e.expense_date <= $3 AT TIME ZONE 'Asia/Kolkata') AND
+		($2::text IS NULL OR e.expense_date >= ($2::timestamp AT TIME ZONE 'Asia/Kolkata')) AND
+		($3::text IS NULL OR e.expense_date <= ($3::timestamp AT TIME ZONE 'Asia/Kolkata')) AND
 		($4::int IS NULL OR e.category_id = $4) AND
 		($5::int IS NULL OR e.payment_method_id = $5)
 	GROUP BY formatted_date
 	ORDER BY formatted_date
 	`
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	var startDate, endDate *string
-
-	if queryParams.StartDate != nil {
-		s := *queryParams.StartDate + " 00:00:00.000+05:30"
-		startDate = &s
-	}
-	if queryParams.EndDate != nil {
-		e := *queryParams.EndDate + " 23:59:59+05:30"
-		endDate = &e
-	}
 
 	rows, err := pg.db.QueryContext(
 		ctx,
@@ -370,7 +384,7 @@ func (pg *PostgresExpenseStore) ListExpensesTotalPerDay(userID int64, queryParam
 	)
 
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	for rows.Next() {
@@ -378,7 +392,7 @@ func (pg *PostgresExpenseStore) ListExpensesTotalPerDay(userID int64, queryParam
 
 		err = rows.Scan(&expenseTotalPerDay.ExpenseDate, &expenseTotalPerDay.TotalAmount, &expenseTotalPerDay.Count)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		expenseTotalPerDays = append(expenseTotalPerDays, &expenseTotalPerDay)
@@ -387,8 +401,8 @@ func (pg *PostgresExpenseStore) ListExpensesTotalPerDay(userID int64, queryParam
 	err = rows.Err()
 
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return expenseTotalPerDays, nil
+	return expenseTotalPerDays, metaItems, nil
 }

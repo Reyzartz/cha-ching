@@ -1,6 +1,7 @@
 package store
 
 import (
+	"cha-ching-server/internal/utils"
 	"context"
 	"database/sql"
 )
@@ -14,8 +15,14 @@ type Category struct {
 type CategoryStat struct {
 	ID          int     `json:"id"`
 	Name        string  `json:"name"`
+	Count       int     `json:"count"`
 	Budget      float64 `json:"budget"`
 	TotalAmount float64 `json:"total_amount"`
+}
+
+type CategoryStatQueryParams struct {
+	StartDate *string `schema:"start_date"`
+	EndDate   *string `schema:"end_date"`
 }
 
 type PostgresCategoryStore struct {
@@ -32,7 +39,7 @@ type CategoryStore interface {
 	CreateCategory(category *Category) (*Category, error)
 	UpdateCategory(category *Category) (*Category, error)
 	ListCategories() ([]*Category, error)
-	CategoryStats() ([]*CategoryStat, error)
+	CategoryStats(queryParams CategoryStatQueryParams) ([]*CategoryStat, error)
 }
 
 func (pg *PostgresCategoryStore) CreateCategory(category *Category) (*Category, error) {
@@ -137,21 +144,26 @@ func (pg *PostgresCategoryStore) ListCategories() ([]*Category, error) {
 	return categories, nil
 }
 
-func (pg *PostgresCategoryStore) CategoryStats() ([]*CategoryStat, error) {
+func (pg *PostgresCategoryStore) CategoryStats(queryParams CategoryStatQueryParams) ([]*CategoryStat, error) {
 	categoryStats := []*CategoryStat{}
 
 	query := `
-	SELECT c.id, c.name, c.budget, COALESCE(SUM(e.amount), 0) as total_amount
+	SELECT c.id, c.name, c.budget, COALESCE(SUM(e.amount), 0) as total_amount, COUNT(e.id) as count
 	FROM categories c
 	LEFT JOIN expenses e 
 	ON c.id = e.category_id
+	WHERE 
+		($1::text IS NULL OR e.expense_date >= ($1::timestamp AT TIME ZONE 'Asia/Kolkata')) AND
+		($2::text IS NULL OR e.expense_date <= ($2::timestamp AT TIME ZONE 'Asia/Kolkata')) 
 	GROUP BY c.id, c.name, c.budget
 	ORDER BY total_amount DESC`
+
+	startDate, endDate := utils.FormatStartEndDate(queryParams.StartDate, queryParams.EndDate)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	rows, err := pg.db.QueryContext(ctx, query)
+	rows, err := pg.db.QueryContext(ctx, query, startDate, endDate)
 	if err != nil {
 		return nil, err
 	}
@@ -164,6 +176,7 @@ func (pg *PostgresCategoryStore) CategoryStats() ([]*CategoryStat, error) {
 			&categoryStat.Name,
 			&categoryStat.Budget,
 			&categoryStat.TotalAmount,
+			&categoryStat.Count,
 		)
 		if err != nil {
 			return nil, err

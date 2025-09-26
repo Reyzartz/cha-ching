@@ -98,3 +98,15 @@ func QueryParamsDecoder[T any](r *http.Request, dst *T) error {
 
 	return nil
 }
+
+func FormatStartEndDate(startDate, endDate *string) (formattedStart, formattedEnd *string) {
+	if startDate != nil {
+		s := *startDate + " 00:00:00.000+05:30"
+		formattedStart = &s
+	}
+	if endDate != nil {
+		e := *endDate + " 23:59:59+05:30"
+		formattedEnd = &e
+	}
+	return
+}
