@@ -6,6 +6,11 @@ export interface ICategoryAPIData {
   budget: number;
 }
 
+export interface IGetCategoryStatsParams {
+  startDate: string;
+  endDate: string;
+}
+
 export interface ICategoryStatsAPIData {
   id: number;
   name: string;
@@ -41,8 +46,14 @@ export class CategoryService extends ApiClient {
     return this.put<ICategoryAPIData>("/categories", category);
   }
 
-  async getCategoriesStats() {
-    return this.get<ICategoryStatsAPIData[]>("/categories/stats");
+  async getCategoriesStats({ startDate, endDate }: IGetCategoryStatsParams) {
+    const queryParams = new URLSearchParams();
+    queryParams.set("start_date", startDate);
+    queryParams.set("end_date", endDate);
+
+    return this.get<ICategoryStatsAPIData[]>(
+      `/categories/stats?${queryParams.toString()}`
+    );
   }
 }
 

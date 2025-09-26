@@ -46,7 +46,7 @@ export interface IGetExpensesParams {
   paymentMethodId?: number;
 }
 
-export interface IGetExpenseStatsPerDay {
+export interface IGetExpenseStatsPerDayParams {
   startDate: string;
   endDate: string;
   categoryId?: number;
@@ -92,7 +92,7 @@ export class ExpenseService extends ApiClient {
     endDate,
     categoryId,
     paymentMethodId,
-  }: IGetExpenseStatsPerDay): Promise<
+  }: IGetExpenseStatsPerDayParams): Promise<
     IServerResponse<IExpenseStatsPerDayAPIData[]>
   > {
     const queryParams = new URLSearchParams();
@@ -102,7 +102,7 @@ export class ExpenseService extends ApiClient {
     if (paymentMethodId)
       queryParams.set("payment_method_id", paymentMethodId.toString());
 
-    return this.get<IExpenseStatsPerDayAPIData[]>(
+    return this.get<IExpenseStatsPerDayAPIData[], never, IExpenseMetaItems>(
       `/expenses/stats/total-per-day?${queryParams.toString()}`
     );
   }

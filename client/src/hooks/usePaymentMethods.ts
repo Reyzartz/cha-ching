@@ -1,10 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
+  IGetPaymentMethodStatsParams,
   IPaymentMethodStatsAPIData,
   paymentMethodService,
 } from "@/services/api/payment-method";
 import { ICreatePaymentMethodPayload } from "@/services/api";
 import { queryKeys } from "@/constants/queryKeys";
+import { getDateRange, TDateRange } from "./utils";
 
 export interface IPaymentMethodStats {
   id: number;
@@ -22,14 +24,25 @@ const mapPaymentMethodStats = (
   };
 };
 
-export function usePaymentMethodsStats() {
+interface IUsePaymentMethodsStatsParams
+  extends Partial<IGetPaymentMethodStatsParams> {
+  range?: TDateRange;
+}
+
+export function usePaymentMethodsStats(params: IUsePaymentMethodsStatsParams) {
   const {
     data: paymentMethodsStats = [],
     isLoading,
     error,
   } = useQuery({
     queryKey: [...queryKeys.paymentMethods, "stats"],
-    queryFn: () => paymentMethodService.getPaymentMethodsStats(),
+    queryFn: () => {
+      const dateRange = getDateRange(params.range);
+      return paymentMethodService.getPaymentMethodsStats({
+        ...dateRange,
+        ...params,
+      });
+    },
     select: (response) => response.data.map(mapPaymentMethodStats),
   });
   return { paymentMethodsStats, loading: isLoading, error };

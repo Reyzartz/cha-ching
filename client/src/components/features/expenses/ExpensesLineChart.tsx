@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { View, Text, Dimensions } from "react-native";
+import { View, Dimensions } from "react-native";
 import { LineChart } from "react-native-chart-kit";
 import {
   eachDayOfInterval,
@@ -10,8 +10,9 @@ import {
   startOfWeek,
 } from "date-fns";
 
-import { useExpensesPerDay, TExpensePerDayRange } from "@/hooks";
+import { useExpensesPerDay } from "@/hooks";
 import { Select } from "@/components/ui/Select";
+import { TDateRange } from "@/hooks/utils";
 
 interface ExpensesLineChartProps {
   categoryId?: number;
@@ -24,7 +25,7 @@ const ExpensesLineChart: React.FC<ExpensesLineChartProps> = ({
   categoryId,
   paymentMethodId,
 }) => {
-  const [range, setRange] = useState<TExpensePerDayRange>("current_week");
+  const [range, setRange] = useState<TDateRange>("current_week");
   const { expensesPerDay } = useExpensesPerDay({
     range,
     categoryId,
@@ -71,7 +72,7 @@ const ExpensesLineChart: React.FC<ExpensesLineChartProps> = ({
 
   return (
     <View className="relative">
-      <Select<TExpensePerDayRange>
+      <Select<TDateRange>
         width={140}
         value={range}
         items={[

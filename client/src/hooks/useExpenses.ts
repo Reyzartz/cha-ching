@@ -11,18 +11,13 @@ import {
   IExpenseMetaItems,
   IExpenseRelatedItems,
   IGetExpensesParams,
+  IGetExpenseStatsPerDayParams,
 } from "@/services/api/expense";
 import { ICategory } from "./useCategories";
 import { IPaymentMethod } from "./usePaymentMethods";
 import { queryKeys } from "@/constants/queryKeys";
-import {
-  startOfWeek,
-  endOfWeek,
-  startOfMonth,
-  endOfMonth,
-  format,
-} from "date-fns";
 import { useMemo } from "react";
+import { getDateRange, TDateRange } from "./utils";
 
 export interface IExpense {
   id: number;
@@ -136,39 +131,9 @@ export function useExpenses(filters?: IExpenseFilters) {
   };
 }
 
-export type TExpensePerDayRange = "current_week" | "current_month";
-
-export interface IExpensePerDayFilters {
-  range?: TExpensePerDayRange;
-  startDate?: string;
-  endDate?: string;
-  categoryId?: number;
-  paymentMethodId?: number;
-}
-
-function getDateRange(range: TExpensePerDayRange) {
-  const today = new Date();
-  let startDate: string;
-  let endDate: string;
-
-  switch (range) {
-    case "current_week": {
-      startDate = format(startOfWeek(today), "yyyy-MM-dd");
-      endDate = format(endOfWeek(today), "yyyy-MM-dd");
-      break;
-    }
-    case "current_month": {
-      startDate = format(startOfMonth(today), "yyyy-MM-dd");
-      endDate = format(endOfMonth(today), "yyyy-MM-dd");
-      break;
-    }
-    default: {
-      startDate = format(today, "yyyy-MM-dd");
-      endDate = format(today, "yyyy-MM-dd");
-    }
-  }
-
-  return { startDate, endDate };
+export interface IExpensePerDayFilters
+  extends Partial<IGetExpenseStatsPerDayParams> {
+  range?: TDateRange;
 }
 
 export function useExpensesPerDay(filters?: IExpensePerDayFilters) {
@@ -179,7 +144,7 @@ export function useExpensesPerDay(filters?: IExpensePerDayFilters) {
   } = useQuery({
     queryKey: [...queryKeys.expenses, "stats", "per-day", filters],
     queryFn: () => {
-      const dateRange = getDateRange(filters?.range ?? "current_week");
+      const dateRange = getDateRange(filters?.range);
       return expenseService.getTotalPerDay({
         ...dateRange,
         ...filters,

@@ -4,9 +4,11 @@ import {
   categoryService,
   ICategoryStatsAPIData,
   ICreateCategoryPayload,
+  IGetCategoryStatsParams,
   IUpdateCategoryPayload,
 } from "@/services/api/category";
 import { queryKeys } from "@/constants/queryKeys";
+import { getDateRange, TDateRange } from "./utils";
 export interface ICategoryStats {
   id: number;
   name: string;
@@ -23,14 +25,21 @@ const mapCategoryStats = (data: ICategoryStatsAPIData): ICategoryStats => {
   };
 };
 
-export function useCategoriesStats() {
+interface IUseCategoriesStatsParams extends Partial<IGetCategoryStatsParams> {
+  range?: TDateRange;
+}
+
+export function useCategoriesStats(params: IUseCategoriesStatsParams) {
   const {
     data: categoriesStats = [],
     isLoading,
     error,
   } = useQuery({
     queryKey: [...queryKeys.categories, "stats"],
-    queryFn: () => categoryService.getCategoriesStats(),
+    queryFn: () => {
+      const dateRange = getDateRange(params.range);
+      return categoryService.getCategoriesStats({ ...dateRange, ...params });
+    },
     select: (response) => response.data.map(mapCategoryStats),
   });
   return { categoriesStats, loading: isLoading, error };
