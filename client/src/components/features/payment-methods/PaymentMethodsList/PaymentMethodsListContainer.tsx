@@ -4,7 +4,9 @@ import { usePaymentMethodsStats } from "@/hooks";
 import { PaymentMethodsList } from ".";
 
 const PaymentMethodsListContainer = memo(() => {
-  const { paymentMethodsStats, loading, error } = usePaymentMethodsStats();
+  const { paymentMethodsStats, loading, error } = usePaymentMethodsStats({
+    range: "current_month",
+  });
 
   if (loading) {
     return (

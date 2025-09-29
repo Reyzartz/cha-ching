@@ -1,6 +1,7 @@
 import { memo } from "react";
 import { View, ActivityIndicator, Text } from "react-native";
 import { ICategory, useCategoriesStats } from "@/hooks";
+import CategoriesMeta from "@/components/features/categories/CategoriesMeta";
 import { CategoriesList } from ".";
 
 interface ICategoriesListContainerProps {
@@ -10,7 +11,7 @@ interface ICategoriesListContainerProps {
 const CategoriesListContainer = memo(
   ({ onEditCategory }: ICategoriesListContainerProps) => {
     const { categoriesStats, loading, error } = useCategoriesStats({
-      
+      range: "current_month",
     });
 
     if (loading) {
@@ -30,7 +31,9 @@ const CategoriesListContainer = memo(
     }
 
     return (
-      <View className="flex-1">
+      <View className="flex-1 w-full">
+        <CategoriesMeta categoriesStats={categoriesStats} loading={loading} />
+
         <CategoriesList
           categoriesStats={categoriesStats}
           onEditCategory={onEditCategory}
