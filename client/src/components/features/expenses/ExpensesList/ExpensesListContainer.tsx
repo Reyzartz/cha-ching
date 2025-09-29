@@ -4,10 +4,11 @@ import { ExpensesList } from "../ExpensesList";
 import { View, ActivityIndicator, Text } from "react-native";
 import { useExpenses, useCategories, usePaymentMethods } from "@/hooks";
 import { DateRange, DateRangeFilter } from "./DateRangeFilter";
-import ExpensesLineChart from "../ExpensesLineChart";
+import ExpensesLineChart from "../../analytics/ExpensesLineChart";
 import { Select } from "@/components/ui/Select";
 import { Accordion } from "@/components/ui";
 import { format } from "date-fns";
+import ExpensesBarChart from "../ExpensesBarChart";
 
 const ExpensesListContainer = memo(() => {
   const [dateRange, setDateRange] = useState<DateRange>({});
@@ -81,7 +82,7 @@ const ExpensesListContainer = memo(() => {
 
   return (
     <View className="w-full items-start p-4 h-full gap-2 bg-slate-100">
-      <ExpensesLineChart
+      <ExpensesBarChart
         categoryId={categoryId}
         paymentMethodId={paymentMethodId}
       />

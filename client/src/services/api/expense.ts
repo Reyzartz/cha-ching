@@ -93,7 +93,7 @@ export class ExpenseService extends ApiClient {
     categoryId,
     paymentMethodId,
   }: IGetExpenseStatsPerDayParams): Promise<
-    IServerResponse<IExpenseStatsPerDayAPIData[]>
+    IServerResponse<IExpenseStatsPerDayAPIData[], never, IExpenseMetaItems>
   > {
     const queryParams = new URLSearchParams();
     if (startDate) queryParams.set("start_date", startDate);

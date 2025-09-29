@@ -137,11 +137,7 @@ export interface IExpensePerDayFilters
 }
 
 export function useExpensesPerDay(filters?: IExpensePerDayFilters) {
-  const {
-    data = [],
-    isLoading,
-    error,
-  } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: [...queryKeys.expenses, "stats", "per-day", filters],
     queryFn: () => {
       const dateRange = getDateRange(filters?.range);
@@ -150,8 +146,12 @@ export function useExpensesPerDay(filters?: IExpensePerDayFilters) {
         ...filters,
       });
     },
-    select: (response) => response.data,
   });
 
-  return { expensesPerDay: data, loading: isLoading, error };
+  return {
+    expensesPerDay: data?.data ?? [],
+    expensesMeta: data?.meta ?? {},
+    loading: isLoading,
+    error,
+  };
 }

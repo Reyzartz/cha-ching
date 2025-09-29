@@ -2,7 +2,6 @@ import { memo } from "react";
 import { View, ActivityIndicator, Text } from "react-native";
 import { ICategory, useCategoriesStats } from "@/hooks";
 import { CategoriesList } from ".";
-import CategoriesDonutChart from "../CategoriesDonutChart";
 
 interface ICategoriesListContainerProps {
   onEditCategory: (category: ICategory) => void;
@@ -10,7 +9,9 @@ interface ICategoriesListContainerProps {
 
 const CategoriesListContainer = memo(
   ({ onEditCategory }: ICategoriesListContainerProps) => {
-    const { categoriesStats, loading, error } = useCategoriesStats();
+    const { categoriesStats, loading, error } = useCategoriesStats({
+      
+    });
 
     if (loading) {
       return (
@@ -30,7 +31,6 @@ const CategoriesListContainer = memo(
 
     return (
       <View className="flex-1">
-        <CategoriesDonutChart categoriesStats={categoriesStats} />
         <CategoriesList
           categoriesStats={categoriesStats}
           onEditCategory={onEditCategory}

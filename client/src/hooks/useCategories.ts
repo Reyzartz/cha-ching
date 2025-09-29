@@ -29,13 +29,13 @@ interface IUseCategoriesStatsParams extends Partial<IGetCategoryStatsParams> {
   range?: TDateRange;
 }
 
-export function useCategoriesStats(params: IUseCategoriesStatsParams) {
+export function useCategoriesStats(params: IUseCategoriesStatsParams = {}) {
   const {
     data: categoriesStats = [],
     isLoading,
     error,
   } = useQuery({
-    queryKey: [...queryKeys.categories, "stats"],
+    queryKey: [...queryKeys.categories, "stats", params],
     queryFn: () => {
       const dateRange = getDateRange(params.range);
       return categoryService.getCategoriesStats({ ...dateRange, ...params });
