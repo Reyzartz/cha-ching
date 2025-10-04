@@ -1,6 +1,7 @@
 import { memo, useCallback, useState } from "react";
 import { Pressable, View } from "react-native";
 import { Modal, Button, Input, Icon, Select } from "@/components/ui";
+import { DatePickerInput } from "@/components/ui/DatePickerInput";
 import { useCategories, useExpenses, usePaymentMethods } from "@/hooks";
 
 const AddExpenseModal = memo(() => {
@@ -14,6 +15,7 @@ const AddExpenseModal = memo(() => {
     amount: "",
     categoryId: 0,
     paymentMethodId: 0,
+    expenseDate: new Date(), // Default to today
   });
 
   const handleSubmit = useCallback(() => {
@@ -31,7 +33,7 @@ const AddExpenseModal = memo(() => {
       amount: Number(form.amount),
       categoryId: form.categoryId,
       paymentMethodId: form.paymentMethodId,
-      expenseDate: new Date().toISOString(),
+      expenseDate: form.expenseDate.toISOString(),
     });
 
     setForm({
@@ -39,6 +41,7 @@ const AddExpenseModal = memo(() => {
       amount: "",
       categoryId: 0,
       paymentMethodId: 0,
+      expenseDate: new Date(),
     });
 
     setOpen(false);
@@ -98,6 +101,13 @@ const AddExpenseModal = memo(() => {
               onChange={(paymentMethodId: number) =>
                 setForm({ ...form, paymentMethodId })
               }
+            />
+
+            <DatePickerInput
+              label="Expense Date"
+              value={form.expenseDate}
+              onChange={(date) => setForm({ ...form, expenseDate: date })}
+              maxDate={new Date()}
             />
           </View>
         </Modal.Body>
