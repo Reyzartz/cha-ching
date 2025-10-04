@@ -12,6 +12,7 @@ import {
   IExpenseRelatedItems,
   IGetExpensesParams,
   IGetExpenseStatsPerDayParams,
+  IUpdateExpensePayload,
 } from "@/services/api/expense";
 import { ICategory } from "./useCategories";
 import { IPaymentMethod } from "./usePaymentMethods";
@@ -104,6 +105,27 @@ export function useExpenses(filters?: IExpenseFilters) {
     },
   });
 
+  const { mutateAsync: updateExpense } = useMutation({
+    mutationFn: ({
+      id,
+      expense,
+    }: {
+      id: number;
+      expense: IUpdateExpensePayload;
+    }) => expenseService.updateExpense(id, expense),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.expenses,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.categories,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.paymentMethods,
+      });
+    },
+  });
+
   const expenses = useMemo(
     () => data?.pages.flatMap((page) => page.data) ?? [],
     [data]
@@ -124,6 +146,7 @@ export function useExpenses(filters?: IExpenseFilters) {
     loading: isLoading,
     error,
     createExpense,
+    updateExpense,
     hasNextPage,
     fetchNextPage,
     loadingMore: isFetchingNextPage,

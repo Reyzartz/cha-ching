@@ -62,7 +62,7 @@ const AddCategoryModal = memo(
         </Pressable>
 
         <Modal open={visible} onClose={handleClose}>
-          <Modal.Header title="Add Category" />
+          <Modal.Header title={category ? "Edit Category" : "Add Category"} />
           <Modal.Body>
             <View className="gap-4 min-w-96">
               <Input
@@ -90,7 +90,13 @@ const AddCategoryModal = memo(
               Cancel
             </Button>
             <Button onPress={handleSubmit} disabled={!isFormValid || loading}>
-              {category ? "Update" : "Add"} Category
+              {category
+                ? loading
+                  ? "Updating..."
+                  : "Update"
+                : loading
+                  ? "Adding..."
+                  : "Add"}
             </Button>
           </Modal.Footer>
         </Modal>

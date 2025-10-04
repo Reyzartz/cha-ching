@@ -37,6 +37,14 @@ export interface ICreateExpensePayload {
   expenseDate: string;
 }
 
+export interface IUpdateExpensePayload {
+  categoryId: number;
+  paymentMethodId: number;
+  title: string;
+  amount: number;
+  expenseDate: string;
+}
+
 export interface IGetExpensesParams {
   limit?: number;
   page?: number;
@@ -79,6 +87,19 @@ export class ExpenseService extends ApiClient {
   ): Promise<IServerResponse<IExpenseAPIData>> {
     return this.post<IExpenseAPIData>("/expenses", {
       user_id: expense.userId,
+      category_id: expense.categoryId,
+      payment_method_id: expense.paymentMethodId,
+      title: expense.title,
+      amount: expense.amount,
+      expense_date: expense.expenseDate,
+    });
+  }
+
+  async updateExpense(
+    expenseId: number,
+    expense: IUpdateExpensePayload
+  ): Promise<IServerResponse<IExpenseAPIData>> {
+    return this.put<IExpenseAPIData>(`/expenses/${expenseId}`, {
       category_id: expense.categoryId,
       payment_method_id: expense.paymentMethodId,
       title: expense.title,

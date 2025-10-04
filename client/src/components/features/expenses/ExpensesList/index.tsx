@@ -6,9 +6,10 @@ import { IExpense } from "@/hooks";
 
 export interface ExpensesListProps {
   expenses: IExpense[];
-  onEndReached?: () => void;
-  loadingMore?: boolean;
-  isRefetching?: boolean;
+  onEndReached: () => void;
+  loadingMore: boolean;
+  isRefetching: boolean;
+  onEditExpense: (expense: IExpense) => void;
 }
 
 const LoadingIndicator = () => (
@@ -18,7 +19,7 @@ const LoadingIndicator = () => (
 );
 
 const ExpensesList = memo<ExpensesListProps>(
-  ({ expenses, onEndReached, loadingMore, isRefetching }) => {
+  ({ expenses, onEndReached, loadingMore, isRefetching, onEditExpense }) => {
     if (expenses.length === 0 && !isRefetching) {
       return (
         <Card className="flex-1 justify-center items-center w-full">
@@ -34,7 +35,9 @@ const ExpensesList = memo<ExpensesListProps>(
       <FlatList
         className="flex-1 w-full"
         data={expenses}
-        renderItem={({ item }) => <ExpenseItem expense={item} />}
+        renderItem={({ item }) => (
+          <ExpenseItem expense={item} onEdit={() => onEditExpense?.(item)} />
+        )}
         keyExtractor={(item) => item.id.toString()}
         ItemSeparatorComponent={() => <View className="h-1" />}
         contentContainerStyle={{ paddingBottom: 24 }}
