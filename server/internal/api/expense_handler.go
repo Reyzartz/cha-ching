@@ -3,7 +3,6 @@ package api
 import (
 	"cha-ching-server/internal/store"
 	"cha-ching-server/internal/utils"
-	"fmt"
 	"log"
 	"net/http"
 )
@@ -18,48 +17,6 @@ func NewExpenseHandler(logger *log.Logger, expenseStore store.ExpenseStore) *Exp
 		logger,
 		expenseStore,
 	}
-}
-
-func (eh *ExpenseHandler) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
-	var user store.User
-
-	if err := utils.ReadRequestBody(r, &user); err != nil {
-		eh.logger.Printf("ERROR: decoding create user request body: %v", err)
-		utils.WriteJSONResponse(w, http.StatusBadRequest, utils.Envelope{"error": "invalid request body"})
-		return
-	}
-
-	createdUser, err := eh.expenseStore.CreateUser(&user)
-	if err != nil {
-		eh.logger.Printf("ERROR: CreateUser: %v", err)
-		utils.WriteJSONResponse(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})
-		return
-	}
-
-	utils.WriteJSONResponse(w, http.StatusCreated, utils.Envelope{
-		"data": createdUser,
-	})
-}
-
-func (eh *ExpenseHandler) HandleGetUser(w http.ResponseWriter, r *http.Request) {
-	id, err := utils.ReadIDParam(r)
-	if err != nil {
-		eh.logger.Printf("ERROR: ReadIDParam: %v", err)
-		utils.WriteJSONResponse(w, http.StatusBadRequest, utils.Envelope{"error": "invalid id parameter"})
-		return
-	}
-
-	user, err := eh.expenseStore.GetUserByID(id)
-	fmt.Printf("User: %+v, Error: %v\n", user, err)
-	if err != nil {
-		eh.logger.Printf("ERROR: GetUserByID: %v", err)
-		utils.WriteJSONResponse(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})
-		return
-	}
-
-	utils.WriteJSONResponse(w, http.StatusOK, utils.Envelope{
-		"data": user,
-	})
 }
 
 func (eh *ExpenseHandler) HandleCreateExpense(w http.ResponseWriter, r *http.Request) {

@@ -6,12 +6,6 @@ import (
 	"database/sql"
 )
 
-type User struct {
-	ID    int    `json:"id"`
-	Name  string `json:"name"`
-	Email string `json:"email"`
-}
-
 type Expense struct {
 	ID              int     `json:"id"`
 	UserID          int     `json:"user_id"`
@@ -73,70 +67,12 @@ func NewPostgresExpenseStore(db *sql.DB) *PostgresExpenseStore {
 }
 
 type ExpenseStore interface {
-	// User methods
-	CreateUser(user *User) (*User, error)
-	GetUserByID(id int64) (*User, error)
-
-	// // Expense methods
 	CreateExpense(expense *Expense) (*Expense, error)
 	UpdateExpense(id int64, expense *Expense) (*Expense, error)
 	ListExpensesByUserID(userID int64, queryParams ExpenseQueryParams) ([]*Expense, *ExpensePaginationData, *ExpenseRelatedItems, *ExpenseMetaItems, error)
 	ListExpensesTotalPerDay(userID int64, queryParams ExpenseTotalPerDayQueryParams) ([]*ExpenseTotalPerDay, *ExpenseMetaItems, error)
 }
 
-func (pg *PostgresExpenseStore) CreateUser(user *User) (*User, error) {
-	tx, err := pg.db.Begin()
-	if err != nil {
-		return nil, err
-	}
-
-	defer tx.Rollback()
-
-	query := `
-		INSERT INTO users (name, email)
-		    VALUES ($1, $2)
-		RETURNING
-		    id`
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	err = tx.QueryRowContext(ctx, query, user.Name, user.Email).Scan(&user.ID)
-	if err != nil {
-		return nil, err
-	}
-
-	err = tx.Commit()
-	if err != nil {
-		return nil, err
-	}
-
-	return user, nil
-}
-
-func (pg *PostgresExpenseStore) GetUserByID(id int64) (*User, error) {
-	user := &User{}
-
-	query := `
-		SELECT u.id, u.name, u.email
-		FROM users u
-		WHERE u.id = $1`
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	err := pg.db.QueryRowContext(ctx, query, id).Scan(
-		&user.ID,
-		&user.Name,
-		&user.Email,
-	)
-	if err == sql.ErrNoRows {
-		return nil, nil
-	}
-	if err != nil {
-		return nil, err
-	}
-
-	return user, nil
-}
 
 func (pg *PostgresExpenseStore) CreateExpense(expense *Expense) (*Expense, error) {
 	tx, err := pg.db.Begin()

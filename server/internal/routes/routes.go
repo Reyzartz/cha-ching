@@ -24,8 +24,7 @@ func RegisterRoutes(app *app.Application) *chi.Mux {
 	r.Get("/health", app.HealthCheck)
 
 	// User endpoints
-	r.Post("/users", app.ExpenseHandler.HandleCreateUser)
-	r.Get("/users/{id}", app.ExpenseHandler.HandleGetUser)
+	r.Post("/users", app.UserHandler.HandleCreateUser)
 
 	// Category endpoints
 	r.Post("/categories", app.CategoryHandler.HandleCreateCategory)
