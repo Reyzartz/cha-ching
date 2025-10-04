@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useCallback, useMemo } from "react";
 import { View, Dimensions, ActivityIndicator } from "react-native";
 import { LineChart } from "react-native-chart-kit";
 import {
@@ -29,43 +29,103 @@ const ExpensesLineChart: React.FC<ExpensesLineChartProps> = ({
   expensesPerDay,
   loading,
 }) => {
+  const formatDateLabel = useCallback(
+    (date: Date) => {
+      switch (range) {
+        case "current_week":
+        case "last_week":
+          return format(date, "EEE");
+        case "current_month":
+        case "last_month":
+          return format(date, "d MMM");
+        default:
+          return date.toDateString();
+      }
+    },
+    [range]
+  );
+
   const labels = useMemo(() => {
     const today = new Date();
-    const start =
-      range === "current_week" ? startOfWeek(today) : startOfMonth(today);
-    const end = range === "current_week" ? endOfWeek(today) : endOfMonth(today);
+    let start: Date;
+    let end: Date;
 
     switch (range) {
       case "current_week":
+        start = startOfWeek(today);
+        end = endOfWeek(today);
+        return eachDayOfInterval({ start, end }).map(formatDateLabel);
+      case "last_week": {
+        const lastWeekStart = startOfWeek(
+          new Date(today.setDate(today.getDate() - 7))
+        );
+        const lastWeekEnd = endOfWeek(lastWeekStart);
         return eachDayOfInterval({
-          start,
-          end,
-        }).map((date) => format(date, "EEE"));
+          start: lastWeekStart,
+          end: lastWeekEnd,
+        }).map(formatDateLabel);
+      }
       case "current_month":
+        start = startOfMonth(today);
+        end = endOfMonth(today);
+        return eachDayOfInterval({ start, end }).map(formatDateLabel);
+
+      case "last_month": {
+        const lastMonthDate = new Date(
+          today.getFullYear(),
+          today.getMonth() - 1,
+          1
+        );
+        const lastMonthStart = startOfMonth(lastMonthDate);
+        const lastMonthEnd = endOfMonth(lastMonthDate);
         return eachDayOfInterval({
-          start,
-          end,
-        }).map((date) => format(date, "d MMM"));
+          start: lastMonthStart,
+          end: lastMonthEnd,
+        }).map(formatDateLabel);
+      }
+
       default:
         return [];
     }
-  }, [range]);
+  }, [formatDateLabel, range]);
 
   const amounts = useMemo(() => {
     const amountMap: Record<string, number> = {};
     expensesPerDay.forEach((item) => {
       if (item.expense_date) {
         const date = new Date(item.expense_date);
-        const label =
-          range === "current_week"
-            ? format(date, "EEE")
-            : format(date, "d MMM");
+        let label: string;
+        switch (range) {
+          case "current_week":
+          case "last_week":
+            label = formatDateLabel(date);
+            break;
+          case "current_month":
+          case "last_month":
+            label = formatDateLabel(date);
+            break;
+          default:
+            label = "";
+        }
         amountMap[label] = item.total_amount;
       }
     });
 
     return labels.map((label) => amountMap[label] || 0);
-  }, [expensesPerDay, labels, range]);
+  }, [expensesPerDay, formatDateLabel, labels, range]);
+
+  const hidePointsAtIndex = useMemo(() => {
+    switch (range) {
+      case "current_month":
+      case "last_month":
+        return amounts
+          .map((_, idx) => (idx % 6 === 0 ? -1 : idx))
+          .filter((idx) => idx !== -1);
+
+      default:
+        return [];
+    }
+  }, [amounts, range]);
 
   return (
     <View
@@ -93,13 +153,7 @@ const ExpensesLineChart: React.FC<ExpensesLineChartProps> = ({
               ? `${(value / 1000).toFixed(0)}K`
               : value.toFixed(0);
           }}
-          hidePointsAtIndex={
-            range === "current_month"
-              ? amounts
-                  .map((_, idx) => (idx % 6 === 0 ? -1 : idx))
-                  .filter((idx) => idx !== -1)
-              : []
-          }
+          hidePointsAtIndex={hidePointsAtIndex}
           yAxisLabel="₹"
           bezier
           transparent

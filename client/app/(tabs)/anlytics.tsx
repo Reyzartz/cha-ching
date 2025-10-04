@@ -26,6 +26,8 @@ export default function Analytics() {
   const ranges: { id: TDateRange; name: string }[] = [
     { id: "current_week", name: "This Week" },
     { id: "current_month", name: "This Month" },
+    { id: "last_week", name: "Last Week" },
+    { id: "last_month", name: "Last Month" },
   ];
 
   return (
