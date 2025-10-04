@@ -84,6 +84,35 @@ func (eh *ExpenseHandler) HandleCreateExpense(w http.ResponseWriter, r *http.Req
 	})
 }
 
+func (eh *ExpenseHandler) HandleUpdateExpense(w http.ResponseWriter, r *http.Request) {
+	var expense store.Expense
+
+	id, err := utils.ReadIDParam(r)
+	if err != nil {
+		eh.logger.Printf("ERROR: ReadIDParam: %v", err)
+		utils.WriteJSONResponse(w, http.StatusBadRequest, utils.Envelope{"error": "invalid id parameter"})
+		return
+	}
+
+	err = utils.ReadRequestBody(r, &expense)
+	if err != nil {
+		eh.logger.Panicf("ERROR: decoding update expense request body %v", err)
+		utils.WriteJSONResponse(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})
+		return
+	}
+
+	updatedExpense, err := eh.expenseStore.UpdateExpense(id, &expense)
+	if err != nil {
+		eh.logger.Printf("ERROR: UpdateExpense: %v", err)
+		utils.WriteJSONResponse(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})
+		return
+	}
+
+	utils.WriteJSONResponse(w, http.StatusOK, utils.Envelope{
+		"data": updatedExpense,
+	})
+}
+
 func (eh *ExpenseHandler) HandleGetAllExpenses(w http.ResponseWriter, r *http.Request) {
 	// For simplicity, we are using a hardcoded user ID.
 	// In a real application, you would get this from the authenticated user context.

@@ -79,6 +79,7 @@ type ExpenseStore interface {
 
 	// // Expense methods
 	CreateExpense(expense *Expense) (*Expense, error)
+	UpdateExpense(id int64, expense *Expense) (*Expense, error)
 	ListExpensesByUserID(userID int64, queryParams ExpenseQueryParams) ([]*Expense, *ExpensePaginationData, *ExpenseRelatedItems, *ExpenseMetaItems, error)
 	ListExpensesTotalPerDay(userID int64, queryParams ExpenseTotalPerDayQueryParams) ([]*ExpenseTotalPerDay, *ExpenseMetaItems, error)
 }
@@ -154,8 +155,8 @@ func (pg *PostgresExpenseStore) CreateExpense(expense *Expense) (*Expense, error
 			amount,
 			expense_date
 		) VALUES ($1, $2, $3, $4, $5, $6)
-		RETURNING
-		    ID`
+		RETURNING ID`
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	err = tx.QueryRowContext(ctx, query, expense.UserID, expense.CategoryID, expense.PaymentMethodID, expense.Title, expense.Amount, expense.ExpenseDate).Scan(&expense.ID)
@@ -164,6 +165,40 @@ func (pg *PostgresExpenseStore) CreateExpense(expense *Expense) (*Expense, error
 	}
 
 	err = tx.Commit()
+	if err != nil {
+		return nil, err
+	}
+
+	return expense, nil
+}
+
+func (pg *PostgresExpenseStore) UpdateExpense(id int64, expense *Expense) (*Expense, error) {
+	query := `
+	UPDATE expenses
+	SET 
+		category_id = $1, 
+		payment_method_id = $2, 
+		title = $3,
+		amount = $4,
+		expense_date = $5
+	WHERE id = $6 
+	RETURNING id
+	`
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	err := pg.db.QueryRowContext(
+		ctx,
+		query,
+		expense.CategoryID,
+		expense.PaymentMethodID,
+		expense.Title,
+		expense.Amount,
+		expense.ExpenseDate,
+		id,
+	).Scan(&expense.ID)
+
 	if err != nil {
 		return nil, err
 	}
