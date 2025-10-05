@@ -110,3 +110,12 @@ func FormatStartEndDate(startDate, endDate *string) (formattedStart, formattedEn
 	}
 	return
 }
+
+func ExtractTokenFromHeader(authHeader string) (string, error) {
+	const prefix = "Bearer "
+	if len(authHeader) < len(prefix) || authHeader[:len(prefix)] != prefix {
+		return "", errors.New("invalid authorization header format")
+	}
+
+	return authHeader[len(prefix):], nil
+}

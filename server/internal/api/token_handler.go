@@ -40,7 +40,7 @@ func (h *TokenHandler) HandleCreateToken(w http.ResponseWriter, r *http.Request)
 	user, err := h.userStore.GetUserByEmail(req.Email)
 	if err != nil || user == nil {
 		h.logger.Printf("ERROR: GetUserByEmail: %v", err)
-		utils.WriteJSONResponse(w, http.StatusInternalServerError, utils.Envelope{"error": "invalid email or password"})
+		utils.WriteJSONResponse(w, http.StatusUnauthorized, utils.Envelope{"error": "invalid email or password"})
 		return
 	}
 
@@ -63,5 +63,5 @@ func (h *TokenHandler) HandleCreateToken(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	utils.WriteJSONResponse(w, http.StatusOK, utils.Envelope{"auth_token": token.TokenString})
+	utils.WriteJSONResponse(w, http.StatusOK, utils.Envelope{"data": map[string]interface{}{"auth_token": token.TokenString}})
 }

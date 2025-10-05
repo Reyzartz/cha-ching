@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"crypto/sha256"
 	"database/sql"
 	"errors"
 
@@ -43,6 +44,12 @@ type User struct {
 	PasswordHash password `json:"-"`
 }
 
+var AnonymousUser = &User{}
+
+func (u *User) IsAnonymous() bool {
+	return u == AnonymousUser
+}
+
 type PostgresUserStore struct {
 	db *sql.DB
 }
@@ -56,6 +63,7 @@ func NewPostgresUserStore(db *sql.DB) *PostgresUserStore {
 type UserStore interface {
 	CreateUser(user *User) (*User, error)
 	GetUserByEmail(email string) (*User, error)
+	GetUserByToken(tokenString string) (*User, error)
 }
 
 func (pg *PostgresUserStore) CreateUser(user *User) (*User, error) {
@@ -114,6 +122,42 @@ func (pg *PostgresUserStore) GetUserByEmail(email string) (*User, error) {
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}
+
+func (pg *PostgresUserStore) GetUserByToken(tokenString string) (*User, error) {
+	tokenHash := sha256.Sum256([]byte(tokenString))
+
+	query := `
+	SELECT u.id, u.name, u.email, u.password_hash
+	FROM users u
+	INNER JOIN tokens t
+	ON t.user_id = u.id
+	WHERE t.hash = $1
+	`
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	user := &User{
+		PasswordHash: password{},
+	}
+
+	err := pg.db.QueryRowContext(ctx, query, tokenHash[:]).Scan(
+		&user.ID,
+		&user.Name,
+		&user.Email,
+		&user.PasswordHash.hash,
+	)
+
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+
 	if err != nil {
 		return nil, err
 	}

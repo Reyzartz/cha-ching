@@ -28,7 +28,7 @@ func GenerateToken(userID int, ttl time.Duration) (*Token, error) {
 	}
 
 	token.TokenString = base32.StdEncoding.WithPadding(base32.NoPadding).EncodeToString(emptyBytes)
-	hash := sha256.Sum224([]byte(token.TokenString))
+	hash := sha256.Sum256([]byte(token.TokenString))
 	token.Hash = hash[:]
 	return token, nil
 }

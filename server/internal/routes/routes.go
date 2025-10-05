@@ -29,21 +29,28 @@ func RegisterRoutes(app *app.Application) *chi.Mux {
 	// Token endpoints
 	r.Post("/tokens/authenticate", app.TokenHandler.HandleCreateToken)
 
-	// Category endpoints
-	r.Post("/categories", app.CategoryHandler.HandleCreateCategory)
-	r.Get("/categories", app.CategoryHandler.HandleGetAllCategories)
-	r.Get("/categories/stats", app.CategoryHandler.HandleGetCategoryStats)
-	r.Put("/categories", app.CategoryHandler.HandleUpdateCategory)
+	r.Group(func(r chi.Router) {
+		r.Use(app.UserMiddleware.Authenticate)
+		r.Use(app.UserMiddleware.RequireAuthenticatedUser)
 
-	// Payment method endpoints
-	r.Post("/payment-methods", app.PaymentMethodHandler.HandleCreatePaymentMethod)
-	r.Get("/payment-methods", app.PaymentMethodHandler.HandleGetAllPaymentMethods)
-	r.Get("/payment-methods/stats", app.PaymentMethodHandler.HandleGetPaymentMethodStats)
+		// Category endpoints
+		r.Post("/categories", app.CategoryHandler.HandleCreateCategory)
+		r.Get("/categories", app.CategoryHandler.HandleGetAllCategories)
+		r.Get("/categories/stats", app.CategoryHandler.HandleGetCategoryStats)
+		r.Put("/categories", app.CategoryHandler.HandleUpdateCategory)
 
-	// Expense endpoints
-	r.Post("/expenses", app.ExpenseHandler.HandleCreateExpense)
-	r.Put("/expenses/{id}", app.ExpenseHandler.HandleUpdateExpense)
-	r.Get("/expenses", app.ExpenseHandler.HandleGetAllExpenses)
-	r.Get("/expenses/stats/total-per-day", app.ExpenseHandler.HandleGetExpensesTotalPerDay)
+		// Payment method endpoints
+		r.Post("/payment-methods", app.PaymentMethodHandler.HandleCreatePaymentMethod)
+		r.Get("/payment-methods", app.PaymentMethodHandler.HandleGetAllPaymentMethods)
+		r.Get("/payment-methods/stats", app.PaymentMethodHandler.HandleGetPaymentMethodStats)
+
+		// Expense endpoints
+		r.Post("/expenses", app.ExpenseHandler.HandleCreateExpense)
+		r.Put("/expenses/{id}", app.ExpenseHandler.HandleUpdateExpense)
+		r.Get("/expenses", app.ExpenseHandler.HandleGetAllExpenses)
+		r.Get("/expenses/stats/total-per-day", app.ExpenseHandler.HandleGetExpensesTotalPerDay)
+
+	})
+
 	return r
 }

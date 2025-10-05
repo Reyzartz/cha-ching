@@ -3,6 +3,7 @@ package app
 import (
 	"cha-ching-server/internal/api"
 	"cha-ching-server/internal/config"
+	"cha-ching-server/internal/middleware"
 	"cha-ching-server/internal/migrations"
 	"cha-ching-server/internal/store"
 	"database/sql"
@@ -19,6 +20,7 @@ type Application struct {
 	PaymentMethodHandler *api.PaymentMethodHandler
 	UserHandler          *api.UserHandler
 	TokenHandler         *api.TokenHandler
+	UserMiddleware       *middleware.UserMiddleware
 	Database             *sql.DB
 }
 
@@ -47,6 +49,8 @@ func NewApplication(cfg *config.Config) (*Application, error) {
 	paymentMethodHandler := api.NewPaymentMethodHandler(logger, paymentMethodStore)
 	tokenHandler := api.NewTokenHandler(logger, tokenStore, userStore)
 
+	userMiddleware := middleware.NewUserMiddleware(userStore)
+
 	app := &Application{
 		Logger:               logger,
 		ExpenseHandler:       expenseHandler,
@@ -54,6 +58,7 @@ func NewApplication(cfg *config.Config) (*Application, error) {
 		PaymentMethodHandler: paymentMethodHandler,
 		UserHandler:          userHandler,
 		TokenHandler:         tokenHandler,
+		UserMiddleware:       userMiddleware,
 		Database:             db,
 	}
 
