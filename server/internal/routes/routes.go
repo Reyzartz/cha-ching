@@ -26,6 +26,9 @@ func RegisterRoutes(app *app.Application) *chi.Mux {
 	// User endpoints
 	r.Post("/users", app.UserHandler.HandleCreateUser)
 
+	// Token endpoints
+	r.Post("/tokens/authenticate", app.TokenHandler.HandleCreateToken)
+
 	// Category endpoints
 	r.Post("/categories", app.CategoryHandler.HandleCreateCategory)
 	r.Get("/categories", app.CategoryHandler.HandleGetAllCategories)

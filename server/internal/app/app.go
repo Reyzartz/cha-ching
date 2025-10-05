@@ -18,6 +18,7 @@ type Application struct {
 	CategoryHandler      *api.CategoryHandler
 	PaymentMethodHandler *api.PaymentMethodHandler
 	UserHandler          *api.UserHandler
+	TokenHandler         *api.TokenHandler
 	Database             *sql.DB
 }
 
@@ -38,11 +39,13 @@ func NewApplication(cfg *config.Config) (*Application, error) {
 	expenseStore := store.NewPostgresExpenseStore(db)
 	categoryStore := store.NewPostgresCategoryStore(db)
 	paymentMethodStore := store.NewPostgresPaymentMethodStore(db)
+	tokenStore := store.NewPostgresTokenStore(db)
 
 	userHandler := api.NewUserHandler(logger, userStore)
 	expenseHandler := api.NewExpenseHandler(logger, expenseStore)
 	categoryHandler := api.NewCategoryHandler(logger, categoryStore)
 	paymentMethodHandler := api.NewPaymentMethodHandler(logger, paymentMethodStore)
+	tokenHandler := api.NewTokenHandler(logger, tokenStore, userStore)
 
 	app := &Application{
 		Logger:               logger,
@@ -50,6 +53,7 @@ func NewApplication(cfg *config.Config) (*Application, error) {
 		CategoryHandler:      categoryHandler,
 		PaymentMethodHandler: paymentMethodHandler,
 		UserHandler:          userHandler,
+		TokenHandler:         tokenHandler,
 		Database:             db,
 	}
 
