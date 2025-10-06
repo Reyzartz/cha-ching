@@ -1,5 +1,8 @@
 import { config } from "@/config";
-import axios, { AxiosInstance, AxiosResponse } from "axios";
+import axios, { AxiosError, AxiosInstance, AxiosResponse } from "axios";
+import messagingSystem from "@/utils/Messaging";
+import { NetworkError } from "@/utils/NetworkError";
+import LocalStorage from "@/utils/LocalStorage";
 
 export interface IRelatedItems {
   [key: string]: {
@@ -33,26 +36,40 @@ export interface IServerResponse<
 
 export class ApiClient {
   protected client: AxiosInstance;
+  protected isPublic: boolean;
 
-  constructor() {
+  constructor({ isPublic = false }: { isPublic?: boolean } = {}) {
+    this.isPublic = isPublic;
+
     this.client = axios.create({
       baseURL: config.api.baseUrl,
       headers: {
         "Content-Type": "application/json",
       },
+      timeout: config.api.timeout,
+    });
+
+    this.client.interceptors.request.use(async (request) => {
+      const token = await LocalStorage.getItem(LocalStorage.Keys.AuthToken);
+
+      if (token && !this.isPublic) {
+        request.headers.set("Authorization", `Bearer ${token}`);
+      }
+
+      return request;
     });
 
     this.client.interceptors.response.use(
       (response: AxiosResponse<IServerResponse<any>>) => {
-        const serverResponse = response.data;
-        if (!ApiClient.isSuccessResponse(response)) {
-          return Promise.reject(new Error(serverResponse.error));
-        }
-
         return response;
       },
-      (error) => {
-        console.error("API Error:", error);
+      (responseError: AxiosError<{ error: string }>) => {
+        const error = NetworkError.fromAxiosError(responseError);
+
+        if (!this.isPublic && error.isUnauthorized()) {
+          messagingSystem.emitUnauthorized();
+        }
+
         return Promise.reject(error);
       }
     );

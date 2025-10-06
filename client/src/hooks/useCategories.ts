@@ -7,7 +7,7 @@ import {
   IGetCategoryStatsParams,
   IUpdateCategoryPayload,
 } from "@/services/api/category";
-import { queryKeys } from "@/constants/queryKeys";
+import { QueryKeys } from "@/constants/queryKeys";
 import { getDateRange, TDateRange } from "./utils";
 export interface ICategoryStats {
   id: number;
@@ -35,7 +35,7 @@ export function useCategoriesStats(params: IUseCategoriesStatsParams = {}) {
     isLoading,
     error,
   } = useQuery({
-    queryKey: [...queryKeys.categories, "stats", params],
+    queryKey: [...QueryKeys.categories, "stats", params],
     queryFn: () => {
       const dateRange = getDateRange(params.range);
       return categoryService.getCategoriesStats({ ...dateRange, ...params });
@@ -59,7 +59,7 @@ export function useCategories() {
     isLoading,
     error,
   } = useQuery({
-    queryKey: queryKeys.categories,
+    queryKey: QueryKeys.categories,
     queryFn: () => categoryService.getCategories(),
     select: (response) => response.data,
   });
@@ -69,7 +69,7 @@ export function useCategories() {
       categoryService.createCategory(category),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: queryKeys.categories,
+        queryKey: QueryKeys.categories,
       });
     },
   });
@@ -79,7 +79,7 @@ export function useCategories() {
       categoryService.updateCategory(category),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: queryKeys.categories,
+        queryKey: QueryKeys.categories,
       });
     },
   });

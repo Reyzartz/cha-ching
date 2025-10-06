@@ -5,7 +5,7 @@ import {
   paymentMethodService,
 } from "@/services/api/payment-method";
 import { ICreatePaymentMethodPayload } from "@/services/api";
-import { queryKeys } from "@/constants/queryKeys";
+import { QueryKeys } from "@/constants/queryKeys";
 import { getDateRange, TDateRange } from "./utils";
 
 export interface IPaymentMethodStats {
@@ -35,7 +35,7 @@ export function usePaymentMethodsStats(params: IUsePaymentMethodsStatsParams) {
     isLoading,
     error,
   } = useQuery({
-    queryKey: [...queryKeys.paymentMethods, "stats"],
+    queryKey: [...QueryKeys.paymentMethods, "stats"],
     queryFn: () => {
       const dateRange = getDateRange(params.range);
       return paymentMethodService.getPaymentMethodsStats({
@@ -61,7 +61,7 @@ export function usePaymentMethods() {
     isLoading,
     error,
   } = useQuery({
-    queryKey: queryKeys.paymentMethods,
+    queryKey: QueryKeys.paymentMethods,
     queryFn: () => paymentMethodService.getPaymentMethods(),
     select: (response) => response.data,
   });
@@ -71,7 +71,7 @@ export function usePaymentMethods() {
       paymentMethodService.createPaymentMethod(paymentMethod),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: queryKeys.paymentMethods,
+        queryKey: QueryKeys.paymentMethods,
       });
     },
   });

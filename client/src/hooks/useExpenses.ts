@@ -16,7 +16,7 @@ import {
 } from "@/services/api/expense";
 import { ICategory } from "./useCategories";
 import { IPaymentMethod } from "./usePaymentMethods";
-import { queryKeys } from "@/constants/queryKeys";
+import { QueryKeys } from "@/constants/queryKeys";
 import { useMemo } from "react";
 import { getDateRange, TDateRange } from "./utils";
 
@@ -66,7 +66,7 @@ export function useExpenses(filters?: IExpenseFilters) {
     fetchNextPage,
     isFetchingNextPage,
   } = useInfiniteQuery({
-    queryKey: [...queryKeys.expenses, filters],
+    queryKey: [...QueryKeys.expenses, filters],
     queryFn: async ({ pageParam = 1 }) => {
       const response = await expenseService.getExpenses({
         page: pageParam,
@@ -94,13 +94,13 @@ export function useExpenses(filters?: IExpenseFilters) {
       expenseService.createExpense(expense),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: queryKeys.expenses,
+        queryKey: QueryKeys.expenses,
       });
       queryClient.invalidateQueries({
-        queryKey: queryKeys.categories,
+        queryKey: QueryKeys.categories,
       });
       queryClient.invalidateQueries({
-        queryKey: queryKeys.paymentMethods,
+        queryKey: QueryKeys.paymentMethods,
       });
     },
   });
@@ -115,13 +115,13 @@ export function useExpenses(filters?: IExpenseFilters) {
     }) => expenseService.updateExpense(id, expense),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: queryKeys.expenses,
+        queryKey: QueryKeys.expenses,
       });
       queryClient.invalidateQueries({
-        queryKey: queryKeys.categories,
+        queryKey: QueryKeys.categories,
       });
       queryClient.invalidateQueries({
-        queryKey: queryKeys.paymentMethods,
+        queryKey: QueryKeys.paymentMethods,
       });
     },
   });
@@ -161,7 +161,7 @@ export interface IExpensePerDayFilters
 
 export function useExpensesPerDay(filters?: IExpensePerDayFilters) {
   const { data, isLoading, error } = useQuery({
-    queryKey: [...queryKeys.expenses, "stats", "per-day", filters],
+    queryKey: [...QueryKeys.expenses, "stats", "per-day", filters],
     queryFn: () => {
       const dateRange = getDateRange(filters?.range);
       return expenseService.getTotalPerDay({
