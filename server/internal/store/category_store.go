@@ -10,6 +10,7 @@ type Category struct {
 	ID     int     `json:"id"`
 	Name   string  `json:"name"`
 	Budget float64 `json:"budget"`
+	UserID int     `json:"-"`
 }
 
 type CategoryStat struct {
@@ -38,8 +39,8 @@ func NewPostgresCategoryStore(db *sql.DB) *PostgresCategoryStore {
 type CategoryStore interface {
 	CreateCategory(category *Category) (*Category, error)
 	UpdateCategory(category *Category) (*Category, error)
-	ListCategories() ([]*Category, error)
-	CategoryStats(queryParams CategoryStatQueryParams) ([]*CategoryStat, error)
+	ListCategories(userID int) ([]*Category, error)
+	CategoryStats(userID int, queryParams CategoryStatQueryParams) ([]*CategoryStat, error)
 }
 
 func (pg *PostgresCategoryStore) CreateCategory(category *Category) (*Category, error) {
@@ -51,14 +52,19 @@ func (pg *PostgresCategoryStore) CreateCategory(category *Category) (*Category, 
 	defer tx.Rollback()
 
 	query := `
-		INSERT INTO categories (name, budget)
-		    VALUES ($1, $2)
+		INSERT INTO categories (user_id, name, budget)
+		    VALUES ($1, $2, $3)
 		RETURNING
 		    id`
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	err = tx.QueryRowContext(ctx, query, category.Name, category.Budget).Scan(&category.ID)
+
+	err = tx.QueryRowContext(ctx, query,
+		category.UserID,
+		category.Name,
+		category.Budget,
+	).Scan(&category.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +88,7 @@ func (pg *PostgresCategoryStore) UpdateCategory(category *Category) (*Category, 
 	query := `
 	UPDATE categories
 	SET	name=$1 , budget=$2
-	WHERE id=$3
+	WHERE id=$3 AND user_id=$4
 	RETURNING id
 	`
 	ctx, cancel := context.WithCancel(context.Background())
@@ -94,6 +100,7 @@ func (pg *PostgresCategoryStore) UpdateCategory(category *Category) (*Category, 
 		category.Name,
 		category.Budget,
 		category.ID,
+		category.UserID,
 	).Scan(&category.ID)
 	if err == sql.ErrNoRows {
 		return nil, nil
@@ -111,17 +118,18 @@ func (pg *PostgresCategoryStore) UpdateCategory(category *Category) (*Category, 
 	return category, nil
 }
 
-func (pg *PostgresCategoryStore) ListCategories() ([]*Category, error) {
+func (pg *PostgresCategoryStore) ListCategories(userID int) ([]*Category, error) {
 	categories := []*Category{}
 
 	query := `
 		SELECT c.id, c.name, c.budget
 		FROM categories c
+		WHERE c.user_id = $1
 		ORDER BY c.id`
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	rows, err := pg.db.QueryContext(ctx, query)
+	rows, err := pg.db.QueryContext(ctx, query, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -144,26 +152,28 @@ func (pg *PostgresCategoryStore) ListCategories() ([]*Category, error) {
 	return categories, nil
 }
 
-func (pg *PostgresCategoryStore) CategoryStats(queryParams CategoryStatQueryParams) ([]*CategoryStat, error) {
+func (pg *PostgresCategoryStore) CategoryStats(userID int, queryParams CategoryStatQueryParams) ([]*CategoryStat, error) {
 	categoryStats := []*CategoryStat{}
 
 	query := `
 	SELECT c.id, c.name, c.budget, COALESCE(SUM(e.amount), 0) as total_amount, COUNT(e.id) as count
 	FROM categories c
 	LEFT JOIN expenses e 
-	ON c.id = e.category_id
+	ON c.id = e.category_id 
+		AND e.user_id = $1
+		AND ($2::text IS NULL OR e.expense_date >= ($2::timestamp AT TIME ZONE 'Asia/Kolkata'))
+		AND ($3::text IS NULL OR e.expense_date <= ($3::timestamp AT TIME ZONE 'Asia/Kolkata'))
 	WHERE 
-		($1::text IS NULL OR e.expense_date >= ($1::timestamp AT TIME ZONE 'Asia/Kolkata')) AND
-		($2::text IS NULL OR e.expense_date <= ($2::timestamp AT TIME ZONE 'Asia/Kolkata')) 
+		c.user_id = $1
 	GROUP BY c.id, c.name, c.budget
-	ORDER BY total_amount DESC`
+	ORDER BY c.id`
 
 	startDate, endDate := utils.FormatStartEndDate(queryParams.StartDate, queryParams.EndDate)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	rows, err := pg.db.QueryContext(ctx, query, startDate, endDate)
+	rows, err := pg.db.QueryContext(ctx, query, userID, startDate, endDate)
 	if err != nil {
 		return nil, err
 	}

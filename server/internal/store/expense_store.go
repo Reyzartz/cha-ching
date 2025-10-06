@@ -4,16 +4,19 @@ import (
 	"cha-ching-server/internal/utils"
 	"context"
 	"database/sql"
+	"fmt"
 )
 
 type Expense struct {
 	ID              int     `json:"id"`
-	UserID          int     `json:"user_id"`
+	UserID          int     `json:"-"`
 	CategoryID      int     `json:"category_id"`
 	PaymentMethodID int     `json:"payment_method_id"`
 	Title           string  `json:"title"`
 	Amount          float64 `json:"amount"`
 	ExpenseDate     string  `json:"expense_date"`
+	CreatedAt       string  `json:"-"`
+	UpdatedAt       string  `json:"-"`
 }
 
 type ExpenseTotalPerDay struct {
@@ -69,10 +72,9 @@ func NewPostgresExpenseStore(db *sql.DB) *PostgresExpenseStore {
 type ExpenseStore interface {
 	CreateExpense(expense *Expense) (*Expense, error)
 	UpdateExpense(id int64, expense *Expense) (*Expense, error)
-	ListExpensesByUserID(userID int64, queryParams ExpenseQueryParams) ([]*Expense, *ExpensePaginationData, *ExpenseRelatedItems, *ExpenseMetaItems, error)
-	ListExpensesTotalPerDay(userID int64, queryParams ExpenseTotalPerDayQueryParams) ([]*ExpenseTotalPerDay, *ExpenseMetaItems, error)
+	ListExpensesByUserID(userID int, queryParams ExpenseQueryParams) ([]*Expense, *ExpensePaginationData, *ExpenseRelatedItems, *ExpenseMetaItems, error)
+	ListExpensesTotalPerDay(userID int, queryParams ExpenseTotalPerDayQueryParams) ([]*ExpenseTotalPerDay, *ExpenseMetaItems, error)
 }
-
 
 func (pg *PostgresExpenseStore) CreateExpense(expense *Expense) (*Expense, error) {
 	tx, err := pg.db.Begin()
@@ -82,6 +84,43 @@ func (pg *PostgresExpenseStore) CreateExpense(expense *Expense) (*Expense, error
 
 	defer tx.Rollback()
 
+	// Verify if the category exists for the user
+	var categoryExists bool
+	categoryQuery := `
+		SELECT EXISTS (
+			SELECT 1 
+			FROM categories 
+			WHERE id = $1 AND user_id = $2
+		)
+	`
+	err = tx.QueryRow(categoryQuery, expense.CategoryID, expense.UserID).Scan(&categoryExists)
+	if err != nil {
+		return nil, err
+	}
+
+	if !categoryExists {
+		return nil, fmt.Errorf("category does not exist for the user")
+	}
+
+	// Verify if the payment method exists for the user
+	var paymentMethodExists bool
+	paymentMethodQuery := `
+		SELECT EXISTS (
+			SELECT 1 
+			FROM payment_methods 
+			WHERE id = $1 AND user_id = $2
+		)
+	`
+	err = tx.QueryRow(paymentMethodQuery, expense.PaymentMethodID, expense.UserID).Scan(&paymentMethodExists)
+	if err != nil {
+		return nil, err
+	}
+
+	if !paymentMethodExists {
+		return nil, fmt.Errorf("payment method does not exist for the user")
+	}
+
+	// Insert the expense
 	query := `
 		INSERT INTO expenses (
 			user_id,
@@ -91,7 +130,8 @@ func (pg *PostgresExpenseStore) CreateExpense(expense *Expense) (*Expense, error
 			amount,
 			expense_date
 		) VALUES ($1, $2, $3, $4, $5, $6)
-		RETURNING ID`
+		RETURNING ID
+	`
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -117,7 +157,7 @@ func (pg *PostgresExpenseStore) UpdateExpense(id int64, expense *Expense) (*Expe
 		title = $3,
 		amount = $4,
 		expense_date = $5
-	WHERE id = $6 
+	WHERE id = $6 AND user_id = $7
 	RETURNING id
 	`
 
@@ -133,7 +173,11 @@ func (pg *PostgresExpenseStore) UpdateExpense(id int64, expense *Expense) (*Expe
 		expense.Amount,
 		expense.ExpenseDate,
 		id,
+		expense.UserID,
 	).Scan(&expense.ID)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
 
 	if err != nil {
 		return nil, err
@@ -142,7 +186,7 @@ func (pg *PostgresExpenseStore) UpdateExpense(id int64, expense *Expense) (*Expe
 	return expense, nil
 }
 
-func (pg *PostgresExpenseStore) ListExpensesByUserID(userID int64, queryParams ExpenseQueryParams) (
+func (pg *PostgresExpenseStore) ListExpensesByUserID(userID int, queryParams ExpenseQueryParams) (
 	[]*Expense,
 	*ExpensePaginationData,
 	*ExpenseRelatedItems,
@@ -196,7 +240,6 @@ func (pg *PostgresExpenseStore) ListExpensesByUserID(userID int64, queryParams E
 	query := `
 		SELECT 
 			e.id, 
-			e.user_id, 
 			e.category_id,
 			e.payment_method_id, 
 			e.title,
@@ -207,13 +250,14 @@ func (pg *PostgresExpenseStore) ListExpensesByUserID(userID int64, queryParams E
 			p.id AS payment_method_id,
 			p.name AS payment_method_name
 		FROM expenses e
-		LEFT JOIN categories c ON c.id = e.category_id
-		LEFT JOIN payment_methods p ON p.id = e.payment_method_id
-		WHERE e.user_id = $1 AND
-		($2::text IS NULL OR e.expense_date >= ($2::timestamp AT TIME ZONE 'Asia/Kolkata')) AND
-		($3::text IS NULL OR e.expense_date <= ($3::timestamp AT TIME ZONE 'Asia/Kolkata')) AND
-		($4::int IS NULL OR e.category_id = $4) AND
-		($5::int IS NULL OR e.payment_method_id = $5)
+		LEFT JOIN categories c ON c.id = e.category_id AND c.user_id = $1
+		LEFT JOIN payment_methods p ON p.id = e.payment_method_id AND p.user_id = $1
+		WHERE 
+			e.user_id = $1  AND 
+			($2::text IS NULL OR e.expense_date >= ($2::timestamp AT TIME ZONE 'Asia/Kolkata')) AND
+			($3::text IS NULL OR e.expense_date <= ($3::timestamp AT TIME ZONE 'Asia/Kolkata')) AND
+			($4::int IS NULL OR e.category_id = $4) AND
+			($5::int IS NULL OR e.payment_method_id = $5)
 		ORDER BY e.expense_date DESC
 		LIMIT $6 OFFSET $7
 	`
@@ -247,7 +291,6 @@ func (pg *PostgresExpenseStore) ListExpensesByUserID(userID int64, queryParams E
 		var paymentMethod PaymentMethod
 		err := rows.Scan(
 			&expense.ID,
-			&expense.UserID,
 			&expense.CategoryID,
 			&expense.PaymentMethodID,
 			&expense.Title,
@@ -277,7 +320,7 @@ func (pg *PostgresExpenseStore) ListExpensesByUserID(userID int64, queryParams E
 	}, metaItems, nil
 }
 
-func (pg *PostgresExpenseStore) GetExpenseMetaItems(userID int64, queryParams ExpenseQueryParams) (*ExpenseMetaItems, error) {
+func (pg *PostgresExpenseStore) GetExpenseMetaItems(userID int, queryParams ExpenseQueryParams) (*ExpenseMetaItems, error) {
 	var metaItems = ExpenseMetaItems{}
 
 	// Get total count first
@@ -311,7 +354,7 @@ func (pg *PostgresExpenseStore) GetExpenseMetaItems(userID int64, queryParams Ex
 	return &metaItems, nil
 }
 
-func (pg *PostgresExpenseStore) ListExpensesTotalPerDay(userID int64, queryParams ExpenseTotalPerDayQueryParams) ([]*ExpenseTotalPerDay, *ExpenseMetaItems, error) {
+func (pg *PostgresExpenseStore) ListExpensesTotalPerDay(userID int, queryParams ExpenseTotalPerDayQueryParams) ([]*ExpenseTotalPerDay, *ExpenseMetaItems, error) {
 	var expenseTotalPerDays []*ExpenseTotalPerDay = []*ExpenseTotalPerDay{}
 	metaItems, err := pg.GetExpenseMetaItems(userID, ExpenseQueryParams{
 		StartDate:       queryParams.StartDate,

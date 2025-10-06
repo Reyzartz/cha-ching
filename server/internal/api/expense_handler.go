@@ -1,6 +1,7 @@
 package api
 
 import (
+	"cha-ching-server/internal/middleware"
 	"cha-ching-server/internal/store"
 	"cha-ching-server/internal/utils"
 	"log"
@@ -29,6 +30,9 @@ func (eh *ExpenseHandler) HandleCreateExpense(w http.ResponseWriter, r *http.Req
 		return
 	}
 
+	user := middleware.GetUser(r)
+	expense.UserID = user.ID
+
 	createdExpense, err := eh.expenseStore.CreateExpense(&expense)
 	if err != nil {
 		eh.logger.Printf("ERROR: CreateExpense: %v", err)
@@ -42,6 +46,7 @@ func (eh *ExpenseHandler) HandleCreateExpense(w http.ResponseWriter, r *http.Req
 }
 
 func (eh *ExpenseHandler) HandleUpdateExpense(w http.ResponseWriter, r *http.Request) {
+
 	var expense store.Expense
 
 	id, err := utils.ReadIDParam(r)
@@ -58,7 +63,14 @@ func (eh *ExpenseHandler) HandleUpdateExpense(w http.ResponseWriter, r *http.Req
 		return
 	}
 
+	user := middleware.GetUser(r)
+	expense.UserID = user.ID
+
 	updatedExpense, err := eh.expenseStore.UpdateExpense(id, &expense)
+	if updatedExpense == nil {
+		utils.WriteJSONResponse(w, http.StatusNotFound, utils.Envelope{"error": "expense not found"})
+		return
+	}
 	if err != nil {
 		eh.logger.Printf("ERROR: UpdateExpense: %v", err)
 		utils.WriteJSONResponse(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})
@@ -71,9 +83,8 @@ func (eh *ExpenseHandler) HandleUpdateExpense(w http.ResponseWriter, r *http.Req
 }
 
 func (eh *ExpenseHandler) HandleGetAllExpenses(w http.ResponseWriter, r *http.Request) {
-	// For simplicity, we are using a hardcoded user ID.
-	// In a real application, you would get this from the authenticated user context.
-	userID := int64(1)
+	user := middleware.GetUser(r)
+
 	queryParams := store.ExpenseQueryParams{}
 	err := utils.QueryParamsDecoder(r, &queryParams)
 	if err != nil {
@@ -82,7 +93,7 @@ func (eh *ExpenseHandler) HandleGetAllExpenses(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	expenses, paginationData, relatedItems, metaItems, err := eh.expenseStore.ListExpensesByUserID(userID, queryParams)
+	expenses, paginationData, relatedItems, metaItems, err := eh.expenseStore.ListExpensesByUserID(user.ID, queryParams)
 	if err != nil {
 		eh.logger.Printf("ERROR: ListExpensesByUserID: %v", err)
 		utils.WriteJSONResponse(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})
@@ -98,9 +109,7 @@ func (eh *ExpenseHandler) HandleGetAllExpenses(w http.ResponseWriter, r *http.Re
 }
 
 func (eh *ExpenseHandler) HandleGetExpensesTotalPerDay(w http.ResponseWriter, r *http.Request) {
-	// For simplicity, we are using a hardcoded user ID.
-	// In a real application, you would get this from the authenticated user context.
-	userID := int64(1)
+	user := middleware.GetUser(r)
 
 	queryParams := store.ExpenseTotalPerDayQueryParams{}
 	err := utils.QueryParamsDecoder(r, &queryParams)
@@ -110,7 +119,7 @@ func (eh *ExpenseHandler) HandleGetExpensesTotalPerDay(w http.ResponseWriter, r 
 		return
 	}
 
-	expenses, metaItems, err := eh.expenseStore.ListExpensesTotalPerDay(userID, queryParams)
+	expenses, metaItems, err := eh.expenseStore.ListExpensesTotalPerDay(user.ID, queryParams)
 	if err != nil {
 		eh.logger.Printf("ERROR: ListExpensesTotalPerDay: %v", err)
 		utils.WriteJSONResponse(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})

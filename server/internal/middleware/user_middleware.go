@@ -19,16 +19,16 @@ func NewUserMiddleware(userStore store.UserStore) *UserMiddleware {
 
 type contextKey string
 
-const userContextKey = contextKey("user")
+const UserContextKey = contextKey("user")
 
 func SetUser(r *http.Request, user *store.User) *http.Request {
-	ctx := context.WithValue(r.Context(), userContextKey, user)
+	ctx := context.WithValue(r.Context(), UserContextKey, user)
 	r = r.WithContext(ctx)
 	return r
 }
 
 func GetUser(r *http.Request) *store.User {
-	user, ok := r.Context().Value(userContextKey).(*store.User)
+	user, ok := r.Context().Value(UserContextKey).(*store.User)
 
 	if !ok {
 		panic("missing user in request")

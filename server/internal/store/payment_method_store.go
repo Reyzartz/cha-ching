@@ -7,8 +7,9 @@ import (
 )
 
 type PaymentMethod struct {
-	ID   int    `json:"id"`
-	Name string `json:"name"`
+	ID     int    `json:"id"`
+	Name   string `json:"name"`
+	UserID int    `json:"-"`
 }
 
 type PaymentMethodStatsQueryParams struct {
@@ -35,8 +36,8 @@ func NewPostgresPaymentMethodStore(db *sql.DB) *PostgresPaymentMethodStore {
 
 type PaymentMethodStore interface {
 	CreatePaymentMethod(paymentMethod *PaymentMethod) (*PaymentMethod, error)
-	ListPaymentMethods() ([]*PaymentMethod, error)
-	PaymentMethodStats(queryParams PaymentMethodStatsQueryParams) ([]*PaymentMethodStats, error)
+	ListPaymentMethods(userID int) ([]*PaymentMethod, error)
+	PaymentMethodStats(userID int, queryParams PaymentMethodStatsQueryParams) ([]*PaymentMethodStats, error)
 }
 
 func (pg *PostgresPaymentMethodStore) CreatePaymentMethod(paymentMethod *PaymentMethod) (*PaymentMethod, error) {
@@ -48,13 +49,13 @@ func (pg *PostgresPaymentMethodStore) CreatePaymentMethod(paymentMethod *Payment
 	defer tx.Rollback()
 
 	query := `
-		INSERT INTO payment_methods (name)
-		    VALUES ($1) 
+		INSERT INTO payment_methods (user_id, name)
+		    VALUES ($1, $2) 
 		RETURNING id`
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	err = tx.QueryRowContext(ctx, query, paymentMethod.Name).Scan(&paymentMethod.ID)
+	err = tx.QueryRowContext(ctx, query, paymentMethod.UserID, paymentMethod.Name).Scan(&paymentMethod.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -67,17 +68,18 @@ func (pg *PostgresPaymentMethodStore) CreatePaymentMethod(paymentMethod *Payment
 	return paymentMethod, nil
 }
 
-func (pg *PostgresPaymentMethodStore) ListPaymentMethods() ([]*PaymentMethod, error) {
+func (pg *PostgresPaymentMethodStore) ListPaymentMethods(userID int) ([]*PaymentMethod, error) {
 	paymentMethods := []*PaymentMethod{}
 
 	query := `
 		SELECT pm.id, pm.name
 		FROM payment_methods pm
+		WHERE pm.user_id = $1
 		ORDER BY pm.id`
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	rows, err := pg.db.QueryContext(ctx, query)
+	rows, err := pg.db.QueryContext(ctx, query, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -100,7 +102,7 @@ func (pg *PostgresPaymentMethodStore) ListPaymentMethods() ([]*PaymentMethod, er
 	return paymentMethods, nil
 }
 
-func (pg *PostgresPaymentMethodStore) PaymentMethodStats(queryParams PaymentMethodStatsQueryParams) ([]*PaymentMethodStats, error) {
+func (pg *PostgresPaymentMethodStore) PaymentMethodStats(userID int, queryParams PaymentMethodStatsQueryParams) ([]*PaymentMethodStats, error) {
 	paymentMethods := []*PaymentMethodStats{}
 
 	query := `
@@ -108,9 +110,11 @@ func (pg *PostgresPaymentMethodStore) PaymentMethodStats(queryParams PaymentMeth
 	FROM payment_methods pm
 	LEFT JOIN expenses e
 	ON pm.id = e.payment_method_id
+		AND e.user_id = $1 
+		AND ($2::text IS NULL OR e.expense_date >= ($2::timestamp AT TIME ZONE 'Asia/Kolkata')) 
+		AND ($3::text IS NULL OR e.expense_date <= ($3::timestamp AT TIME ZONE 'Asia/Kolkata')) 
 	WHERE 
-		($1::text IS NULL OR e.expense_date >= ($1::timestamp AT TIME ZONE 'Asia/Kolkata')) AND
-		($2::text IS NULL OR e.expense_date <= ($2::timestamp AT TIME ZONE 'Asia/Kolkata')) 
+		pm.user_id = $1 
 	GROUP BY pm.id, pm.name
 	ORDER BY total_amount DESC`
 
@@ -119,7 +123,7 @@ func (pg *PostgresPaymentMethodStore) PaymentMethodStats(queryParams PaymentMeth
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	rows, err := pg.db.QueryContext(ctx, query, startDate, endDate)
+	rows, err := pg.db.QueryContext(ctx, query, userID, startDate, endDate)
 	if err != nil {
 		return nil, err
 	}

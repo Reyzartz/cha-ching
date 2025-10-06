@@ -65,10 +65,7 @@ const AddExpenseModal = memo(
           expense: expensePayload,
         });
       } else {
-        createExpense({
-          userId: 1, // Hardcoded for now, should come from auth context
-          ...expensePayload,
-        });
+        createExpense(expensePayload);
       }
 
       resetForm();

@@ -22,7 +22,6 @@ import { getDateRange, TDateRange } from "./utils";
 
 export interface IExpense {
   id: number;
-  userId: number;
   categoryId: number;
   paymentMethodId: number;
   category: ICategory | null;
@@ -38,7 +37,6 @@ function mapExpenseData(
 ): IExpense {
   return {
     id: data.id,
-    userId: data.user_id,
     categoryId: data.category_id,
     paymentMethodId: data.payment_method_id,
     category: relatedItems["categories"]?.[data.category_id] ?? null,

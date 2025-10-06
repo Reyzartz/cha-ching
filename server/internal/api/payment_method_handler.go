@@ -1,6 +1,7 @@
 package api
 
 import (
+	"cha-ching-server/internal/middleware"
 	"cha-ching-server/internal/store"
 	"cha-ching-server/internal/utils"
 	"log"
@@ -29,6 +30,9 @@ func (ph *PaymentMethodHandler) HandleCreatePaymentMethod(w http.ResponseWriter,
 		return
 	}
 
+	user := middleware.GetUser(r)
+	paymentMethod.UserID = user.ID
+
 	createdPaymentMethod, err := ph.paymentMethodStore.CreatePaymentMethod(&paymentMethod)
 	if err != nil {
 		ph.logger.Printf("ERROR: CreatePaymentMethod: %v", err)
@@ -42,7 +46,9 @@ func (ph *PaymentMethodHandler) HandleCreatePaymentMethod(w http.ResponseWriter,
 }
 
 func (ph *PaymentMethodHandler) HandleGetAllPaymentMethods(w http.ResponseWriter, r *http.Request) {
-	paymentMethods, err := ph.paymentMethodStore.ListPaymentMethods()
+	user := middleware.GetUser(r)
+
+	paymentMethods, err := ph.paymentMethodStore.ListPaymentMethods(user.ID)
 	if err != nil {
 		ph.logger.Printf("ERROR: ListPaymentMethods: %v", err)
 		utils.WriteJSONResponse(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})
@@ -55,6 +61,8 @@ func (ph *PaymentMethodHandler) HandleGetAllPaymentMethods(w http.ResponseWriter
 }
 
 func (ph *PaymentMethodHandler) HandleGetPaymentMethodStats(w http.ResponseWriter, r *http.Request) {
+	user := middleware.GetUser(r)
+
 	var queryParams store.PaymentMethodStatsQueryParams
 
 	err := utils.QueryParamsDecoder(r, &queryParams)
@@ -64,7 +72,7 @@ func (ph *PaymentMethodHandler) HandleGetPaymentMethodStats(w http.ResponseWrite
 		return
 	}
 
-	stats, err := ph.paymentMethodStore.PaymentMethodStats(queryParams)
+	stats, err := ph.paymentMethodStore.PaymentMethodStats(user.ID, queryParams)
 	if err != nil {
 		ph.logger.Printf("ERROR: PaymentMethodStats: %v", err)
 		utils.WriteJSONResponse(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})

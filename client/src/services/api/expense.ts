@@ -4,7 +4,6 @@ import { IPaymentMethodAPIData } from "./payment-method";
 
 export interface IExpenseAPIData {
   id: number;
-  user_id: number;
   category_id: number;
   payment_method_id: number;
   title: string;
@@ -29,7 +28,6 @@ export interface IExpenseRelatedItems extends IRelatedItems {
 }
 
 export interface ICreateExpensePayload {
-  userId: number;
   categoryId: number;
   paymentMethodId: number;
   title: string;
@@ -86,7 +84,6 @@ export class ExpenseService extends ApiClient {
     expense: ICreateExpensePayload
   ): Promise<IServerResponse<IExpenseAPIData>> {
     return this.post<IExpenseAPIData>("/expenses", {
-      user_id: expense.userId,
       category_id: expense.categoryId,
       payment_method_id: expense.paymentMethodId,
       title: expense.title,
