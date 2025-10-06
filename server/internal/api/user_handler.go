@@ -65,6 +65,18 @@ func (uh *UserHandler) HandleCreateUser(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	existingUser, err := uh.userStore.GetUserByEmail(userReq.Email)
+	if err != nil {
+		uh.logger.Printf("ERROR: GetUserByEmail: %v", err)
+		utils.WriteJSONResponse(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})
+		return
+	}
+
+	if existingUser != nil {
+		utils.WriteJSONResponse(w, http.StatusBadRequest, utils.Envelope{"error": "user already exists"})
+		return
+	}
+
 	user := &store.User{
 		Name:  userReq.Name,
 		Email: userReq.Email,
