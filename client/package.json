@@ -8,7 +8,8 @@
     "android": "DARK_MODE=media expo run:android",
     "ios": "DARK_MODE=media expo run:ios",
     "web": "DARK_MODE=media expo start --web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+		"build:web": "chmod -x ./build.sh"
   },
   "dependencies": {
     "@expo/vector-icons": "^14.1.0",
