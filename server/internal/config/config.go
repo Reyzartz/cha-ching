@@ -7,6 +7,7 @@ import (
 type Config struct {
 	Database DatabaseConfig
 	Server   ServerConfig
+	Client   ClientConfig
 }
 
 type DatabaseConfig struct {
@@ -22,6 +23,10 @@ type ServerConfig struct {
 	Port string
 }
 
+type ClientConfig struct {
+	AllowedOrigins []string
+}
+
 func Load() (*Config, error) {
 	return &Config{
 		Database: DatabaseConfig{
@@ -34,6 +39,9 @@ func Load() (*Config, error) {
 		Server: ServerConfig{
 			Host: getEnv("SERVER_HOST", "0.0.0.0"),
 			Port: getEnv("SERVER_PORT", "8080"),
+		},
+		Client: ClientConfig{
+			AllowedOrigins: []string{getEnv("CLIENT_ALLOWED_ORIGIN", "http://localhost:8081")},
 		},
 	}, nil
 }

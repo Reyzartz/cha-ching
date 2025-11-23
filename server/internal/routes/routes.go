@@ -2,17 +2,18 @@ package routes
 
 import (
 	"cha-ching-server/internal/app"
+	"cha-ching-server/internal/config"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
 )
 
-func RegisterRoutes(app *app.Application) *chi.Mux {
+func RegisterRoutes(app *app.Application, cfg *config.Config) *chi.Mux {
 	r := chi.NewMux()
 
 	// Basic CORS configuration
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:8081"},
+		AllowedOrigins:   cfg.Client.AllowedOrigins,
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
 		ExposedHeaders:   []string{"Link"},

@@ -30,7 +30,7 @@ func main() {
 }
 
 func Start(app *app.Application, cfg *config.Config) {
-	r := routes.RegisterRoutes(app)
+	r := routes.RegisterRoutes(app, cfg)
 	port, _ := strconv.Atoi(cfg.Server.Port)
 
 	server := &http.Server{

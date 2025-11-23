@@ -12,6 +12,7 @@ class MessagingSystem extends EventEmitter {
   };
 
   emitUnauthorized() {
+    console.log("Emitting unauthorized event");
     this.emit("unauthorized");
   }
 }

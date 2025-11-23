@@ -1,6 +1,9 @@
 FROM oven/bun:1.3.1-slim AS builder
 WORKDIR /home/app/client
 
+ARG EXPO_PUBLIC_API_URL
+ENV EXPO_PUBLIC_API_URL=${EXPO_PUBLIC_API_URL}
+
 RUN groupadd app && useradd -g app app
 RUN chown -R app:app /home/app
 USER app
