@@ -17,5 +17,8 @@ RUN chmod +x build.sh && ./build.sh
 
 FROM nginx:alpine3.22
 COPY --from=builder /home/app/client/dist /usr/share/nginx/html
+
+COPY config/nginx.config /etc/nginx/conf.d/default.conf
+
 EXPOSE 80
 
