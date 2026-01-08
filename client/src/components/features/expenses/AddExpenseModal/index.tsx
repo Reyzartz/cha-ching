@@ -97,7 +97,7 @@ const AddExpenseModal = memo(
         <Modal open={visible} onClose={handleClose}>
           <Modal.Header title={expense ? "Edit Expense" : "Add Expense"} />
           <Modal.Body>
-            <View className="gap-4 min-w-96">
+            <View className="gap-4">
               <Input
                 label="Title"
                 placeholder="Enter title"

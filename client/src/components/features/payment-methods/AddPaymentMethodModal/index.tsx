@@ -39,7 +39,7 @@ const AddPaymentMethodModal = memo(() => {
       <Modal open={open} onClose={handleClose}>
         <Modal.Header title="Add Payment Method" />
         <Modal.Body>
-          <View className="gap-4 min-w-96">
+          <View className="gap-4">
             <Input
               label="Name"
               placeholder="Enter payment method name"

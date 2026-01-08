@@ -64,7 +64,7 @@ const AddCategoryModal = memo(
         <Modal open={visible} onClose={handleClose}>
           <Modal.Header title={category ? "Edit Category" : "Add Category"} />
           <Modal.Body>
-            <View className="gap-4 min-w-96">
+            <View className="gap-4">
               <Input
                 label="Name"
                 placeholder="Enter category name"

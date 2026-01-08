@@ -25,7 +25,7 @@ const ExpensesListContainer = memo(
     const [paymentMethodId, setPaymentMethodId] = useState<
       number | undefined
     >();
-    const [filtersOpen, setFiltersOpen] = useState(true);
+    const [filtersOpen, setFiltersOpen] = useState(false);
 
     const { categories } = useCategories();
     const { paymentMethods } = usePaymentMethods();
@@ -39,6 +39,7 @@ const ExpensesListContainer = memo(
       fetchNextPage,
       loadingMore,
       isRefetching,
+      refetch,
     } = useExpenses({
       startDate: dateRange.startDate,
       endDate: dateRange.endDate,
@@ -92,7 +93,7 @@ const ExpensesListContainer = memo(
     }
 
     return (
-      <View className="w-full items-start p-4 h-full gap-2 bg-slate-100">
+      <View className="w-full items-start p-4 h-full gap-2 bg-slate-100 pb-14 mb-1">
         <ExpensesBarChart
           categoryId={categoryId}
           paymentMethodId={paymentMethodId}
@@ -150,6 +151,7 @@ const ExpensesListContainer = memo(
           loadingMore={loadingMore}
           isRefetching={isRefetching}
           onEditExpense={onEditExpense}
+          onRefresh={refetch}
         />
       </View>
     );

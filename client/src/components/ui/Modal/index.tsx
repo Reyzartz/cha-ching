@@ -41,7 +41,7 @@ const Modal = memo(
               })
             }
           >
-            <View className="rounded-md overflow-hidden bg-white h-3/4 border border-gray-100">
+            <View className="rounded-md overflow-hidden bg-white h-3/4 border border-gray-100 w-full max-w-lg">
               {children}
             </View>
           </View>

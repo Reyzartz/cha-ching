@@ -63,6 +63,7 @@ export function useExpenses(filters?: IExpenseFilters) {
     hasNextPage,
     fetchNextPage,
     isFetchingNextPage,
+    refetch,
   } = useInfiniteQuery({
     queryKey: [...QueryKeys.expenses, filters],
     queryFn: async ({ pageParam = 1 }) => {
@@ -149,6 +150,7 @@ export function useExpenses(filters?: IExpenseFilters) {
     fetchNextPage,
     loadingMore: isFetchingNextPage,
     isRefetching: !isLoading && isFetchingNextPage,
+    refetch,
   };
 }
 

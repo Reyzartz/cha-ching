@@ -1,5 +1,11 @@
 import { memo } from "react";
-import { View, Text, FlatList, ActivityIndicator } from "react-native";
+import {
+  View,
+  Text,
+  FlatList,
+  ActivityIndicator,
+  RefreshControl,
+} from "react-native";
 import { Card } from "@/components/ui";
 import { ExpenseItem } from "./ExpenseItem";
 import { IExpense } from "@/hooks";
@@ -10,6 +16,7 @@ export interface ExpensesListProps {
   loadingMore: boolean;
   isRefetching: boolean;
   onEditExpense: (expense: IExpense) => void;
+  onRefresh: () => void;
 }
 
 const LoadingIndicator = () => (
@@ -19,7 +26,14 @@ const LoadingIndicator = () => (
 );
 
 const ExpensesList = memo<ExpensesListProps>(
-  ({ expenses, onEndReached, loadingMore, isRefetching, onEditExpense }) => {
+  ({
+    expenses,
+    onEndReached,
+    loadingMore,
+    isRefetching,
+    onEditExpense,
+    onRefresh,
+  }) => {
     if (expenses.length === 0 && !isRefetching) {
       return (
         <Card className="flex-1 justify-center items-center w-full">
@@ -45,6 +59,9 @@ const ExpensesList = memo<ExpensesListProps>(
         onEndReachedThreshold={0.2}
         ListFooterComponent={
           loadingMore || isRefetching ? LoadingIndicator : undefined
+        }
+        refreshControl={
+          <RefreshControl refreshing={isRefetching} onRefresh={onRefresh} />
         }
       />
     );
