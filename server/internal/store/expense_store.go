@@ -258,7 +258,7 @@ func (pg *PostgresExpenseStore) ListExpensesByUserID(userID int, queryParams Exp
 			($3::text IS NULL OR e.expense_date <= ($3::timestamp AT TIME ZONE 'Asia/Kolkata')) AND
 			($4::int IS NULL OR e.category_id = $4) AND
 			($5::int IS NULL OR e.payment_method_id = $5)
-		ORDER BY e.expense_date DESC
+		ORDER BY e.expense_date DESC, e.created_at DESC
 		LIMIT $6 OFFSET $7
 	`
 
