@@ -25,8 +25,15 @@ export function useAuth() {
     },
   });
 
+  const logout = async () => {
+    await LocalStorage.removeItem(LocalStorage.Keys.AuthToken);
+    await queryClient.clear();
+    router.replace("/login");
+  };
+
   return {
     login,
+    logout,
     error,
   };
 }

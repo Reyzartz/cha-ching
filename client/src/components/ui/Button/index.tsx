@@ -1,11 +1,13 @@
 import { memo } from "react";
 import { Pressable, Text, PressableProps } from "react-native";
+import { Icon, IconProps } from "../Icon";
 
 export interface ButtonProps extends Omit<PressableProps, "children"> {
   children: React.ReactNode;
   variant?: "primary" | "secondary" | "outline" | "ghost";
   size?: "sm" | "md" | "lg";
   fullWidth?: boolean;
+  icon?: IconProps["name"];
 }
 
 const Button = memo<ButtonProps>(
@@ -83,6 +85,8 @@ const Button = memo<ButtonProps>(
 
     const textStyles = `
     font-medium 
+    flex 
+    gap-2
     ${getTextColor()} 
     ${getTextSize()}
   `
@@ -91,7 +95,12 @@ const Button = memo<ButtonProps>(
 
     return (
       <Pressable className={buttonStyles} {...props}>
-        <Text className={textStyles}>{children}</Text>
+        <Text className={textStyles}>
+          {props.icon && (
+            <Icon name={props.icon} size={16} color="currentColor" />
+          )}
+          {children}
+        </Text>
       </Pressable>
     );
   }
