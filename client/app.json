@@ -7,7 +7,11 @@
     "icon": "./assets/images/icon.png",
     "scheme": "chaching",
     "userInterfaceStyle": "automatic",
-    "platforms": ["ios", "android", "web"],
+    "platforms": [
+      "ios",
+      "android",
+      "web"
+    ],
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
@@ -40,6 +44,12 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "660c973e-91fc-4f67-a653-29897231d22a"
+      }
     }
   }
 }

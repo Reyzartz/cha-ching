@@ -34,6 +34,9 @@ func RegisterRoutes(app *app.Application, cfg *config.Config) *chi.Mux {
 		r.Use(app.UserMiddleware.Authenticate)
 		r.Use(app.UserMiddleware.RequireAuthenticatedUser)
 
+		// Current user endpoint
+		r.Get("/users/current", app.UserHandler.HandleGetUser)
+
 		// Category endpoints
 		r.Post("/categories", app.CategoryHandler.HandleCreateCategory)
 		r.Get("/categories", app.CategoryHandler.HandleGetAllCategories)

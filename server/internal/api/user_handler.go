@@ -100,3 +100,23 @@ func (uh *UserHandler) HandleCreateUser(w http.ResponseWriter, r *http.Request) 
 		"data": createdUser,
 	})
 }
+
+func (uh *UserHandler) HandleGetUser(w http.ResponseWriter, r *http.Request) {
+	token, err := utils.ExtractTokenFromHeader(r.Header.Get("Authorization"))
+	if err != nil {
+		uh.logger.Printf("ERROR: extracting token from header: %v", err)
+		utils.WriteJSONResponse(w, http.StatusBadRequest, utils.Envelope{"error": "invalid authorization header"})
+		return
+	}
+
+	user, err := uh.userStore.GetUserByToken(token)
+	if err != nil {
+		uh.logger.Printf("ERROR: GetUserByToken: %v", err)
+		utils.WriteJSONResponse(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})
+		return
+	}
+
+	utils.WriteJSONResponse(w, http.StatusOK, utils.Envelope{
+		"data": user,
+	})
+}
