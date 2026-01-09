@@ -12,14 +12,22 @@ export interface ICreateUserResponse {
   email: string;
 }
 
+export interface IUserAPIData {
+  id: number;
+  name: string;
+  email: string;
+}
+
 class UserService extends ApiClient {
   async createUser(
     payload: ICreateUserPayload
   ): Promise<IServerResponse<ICreateUserResponse>> {
     return this.post<ICreateUserResponse>("/users", payload);
   }
+
+  async getCurrentUser(): Promise<IServerResponse<IUserAPIData>> {
+    return this.get<IUserAPIData>("/users/current");
+  }
 }
 
-export const userService = new UserService({
-  isPublic: true,
-});
+export const userService = new UserService();
