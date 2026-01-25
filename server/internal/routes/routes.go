@@ -53,6 +53,7 @@ func RegisterRoutes(app *app.Application, cfg *config.Config) *chi.Mux {
 		r.Put("/expenses/{id}", app.ExpenseHandler.HandleUpdateExpense)
 		r.Get("/expenses", app.ExpenseHandler.HandleGetAllExpenses)
 		r.Get("/expenses/stats/total-per-day", app.ExpenseHandler.HandleGetExpensesTotalPerDay)
+		r.Get("/expenses/search", app.ExpenseHandler.HandleSearchExpensesByTitle)
 
 	})
 

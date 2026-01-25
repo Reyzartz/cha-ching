@@ -74,6 +74,7 @@ type ExpenseStore interface {
 	UpdateExpense(id int64, expense *Expense) (*Expense, error)
 	ListExpensesByUserID(userID int, queryParams ExpenseQueryParams) ([]*Expense, *ExpensePaginationData, *ExpenseRelatedItems, *ExpenseMetaItems, error)
 	ListExpensesTotalPerDay(userID int, queryParams ExpenseTotalPerDayQueryParams) ([]*ExpenseTotalPerDay, *ExpenseMetaItems, error)
+	SearchExpensesByTitle(userID int, title string) ([]*Expense, error)
 }
 
 func (pg *PostgresExpenseStore) CreateExpense(expense *Expense) (*Expense, error) {
@@ -419,4 +420,62 @@ func (pg *PostgresExpenseStore) ListExpensesTotalPerDay(userID int, queryParams 
 	}
 
 	return expenseTotalPerDays, metaItems, nil
+}
+
+func (pg *PostgresExpenseStore) SearchExpensesByTitle(userID int, title string) ([]*Expense, error) {
+	var expenses []*Expense = []*Expense{}
+
+	query := `
+		SELECT 
+			id, 
+			category_id,
+			payment_method_id, 
+			title,
+			amount, 
+			expense_date
+		FROM expenses
+		WHERE 
+			user_id = $1 AND 
+			title ILIKE '%' || $2 || '%'
+		ORDER BY expense_date DESC, created_at DESC
+	`
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	rows, err := pg.db.QueryContext(
+		ctx,
+		query,
+		userID,
+		title,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var expense Expense
+		err := rows.Scan(
+			&expense.ID,
+			&expense.CategoryID,
+			&expense.PaymentMethodID,
+			&expense.Title,
+			&expense.Amount,
+			&expense.ExpenseDate,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		expenses = append(expenses, &expense)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return expenses, nil
 }

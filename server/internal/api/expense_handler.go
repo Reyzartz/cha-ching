@@ -131,3 +131,24 @@ func (eh *ExpenseHandler) HandleGetExpensesTotalPerDay(w http.ResponseWriter, r 
 		"meta": metaItems,
 	})
 }
+
+func (eh *ExpenseHandler) HandleSearchExpensesByTitle(w http.ResponseWriter, r *http.Request) {
+	user := middleware.GetUser(r)
+
+	query := r.URL.Query().Get("query")
+	if query == "" {
+		utils.WriteJSONResponse(w, http.StatusBadRequest, utils.Envelope{"error": "query query parameter is required"})
+		return
+	}
+
+	expenses, err := eh.expenseStore.SearchExpensesByTitle(user.ID, query)
+	if err != nil {
+		eh.logger.Printf("ERROR: SearchExpensesByTitle: %v", err)
+		utils.WriteJSONResponse(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})
+		return
+	}
+
+	utils.WriteJSONResponse(w, http.StatusOK, utils.Envelope{
+		"data": expenses,
+	})
+}
