@@ -33,7 +33,7 @@ export interface IExpense {
 
 function mapExpenseData(
   data: IExpenseAPIData,
-  relatedItems: Partial<IExpenseRelatedItems> = {}
+  relatedItems: Partial<IExpenseRelatedItems> = {},
 ): IExpense {
   return {
     id: data.id,
@@ -127,7 +127,7 @@ export function useExpenses(filters?: IExpenseFilters) {
 
   const expenses = useMemo(
     () => data?.pages.flatMap((page) => page.data) ?? [],
-    [data]
+    [data],
   );
 
   const expensesMeta = useMemo<IExpenseMetaItems>(() => {
@@ -174,6 +174,26 @@ export function useExpensesPerDay(filters?: IExpensePerDayFilters) {
   return {
     expensesPerDay: data?.data ?? [],
     expensesMeta: data?.meta ?? {},
+    loading: isLoading,
+    error,
+  };
+}
+
+export function useExpensesSearch(query: string) {
+  const { data, isLoading, error } = useQuery({
+    queryKey: [...QueryKeys.expenses, "search", query],
+    queryFn: () => expenseService.searchExpenses(query),
+    enabled: query.length > 0,
+  });
+
+  const expenses = useMemo(
+    () =>
+      data?.data.map((item) => mapExpenseData(item, data.related_items)) ?? [],
+    [data],
+  );
+
+  return {
+    expenses,
     loading: isLoading,
     error,
   };

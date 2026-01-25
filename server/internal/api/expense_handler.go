@@ -141,7 +141,7 @@ func (eh *ExpenseHandler) HandleSearchExpensesByTitle(w http.ResponseWriter, r *
 		return
 	}
 
-	expenses, err := eh.expenseStore.SearchExpensesByTitle(user.ID, query)
+	expenses, relatedItems, err := eh.expenseStore.SearchExpensesByTitle(user.ID, query)
 	if err != nil {
 		eh.logger.Printf("ERROR: SearchExpensesByTitle: %v", err)
 		utils.WriteJSONResponse(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})
@@ -149,6 +149,7 @@ func (eh *ExpenseHandler) HandleSearchExpensesByTitle(w http.ResponseWriter, r *
 	}
 
 	utils.WriteJSONResponse(w, http.StatusOK, utils.Envelope{
-		"data": expenses,
+		"data":          expenses,
+		"related_items": relatedItems,
 	})
 }

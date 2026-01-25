@@ -69,7 +69,7 @@ const ExpensesListContainer = memo(
       if (dateRange.startDate && dateRange.endDate) {
         return `${format(new Date(dateRange.startDate), "d MMM")} - ${format(
           new Date(dateRange.endDate),
-          "d MMM"
+          "d MMM",
         )}`;
       }
 
@@ -94,11 +94,6 @@ const ExpensesListContainer = memo(
 
     return (
       <View className="w-full items-start p-4 h-full gap-2 bg-slate-100 pb-14 mb-1">
-        <ExpensesBarChart
-          categoryId={categoryId}
-          paymentMethodId={paymentMethodId}
-        />
-
         <Text className="font-semibold text-gray-700 text-xl">
           Total: {formatINR(expensesMeta.total_amount)}
         </Text>
@@ -155,7 +150,7 @@ const ExpensesListContainer = memo(
         />
       </View>
     );
-  }
+  },
 );
 
 ExpensesListContainer.displayName = "ExpensesListContainer";

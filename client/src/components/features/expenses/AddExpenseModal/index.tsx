@@ -1,11 +1,20 @@
-import { memo, useCallback, useState } from "react";
+import { memo, useCallback, useState, useMemo } from "react";
 import { Pressable, View } from "react-native";
-import { Modal, Button, Input, Icon, Select } from "@/components/ui";
+import {
+  Modal,
+  Button,
+  Input,
+  Icon,
+  Select,
+  AutocompleteInput,
+} from "@/components/ui";
 import { DatePickerInput } from "@/components/ui/DatePickerInput";
+import type { AutocompleteOption } from "@/components/ui/AutocompleteInput";
 import {
   IExpense,
   useCategories,
   useExpenses,
+  useExpensesSearch,
   usePaymentMethods,
 } from "@/hooks";
 
@@ -22,6 +31,10 @@ const AddExpenseModal = memo(
     const { paymentMethods } = usePaymentMethods();
     const { createExpense, updateExpense, loading } = useExpenses();
 
+    const [searchQuery, setSearchQuery] = useState("");
+    const { expenses: searchResults, loading: searchLoading } =
+      useExpensesSearch(searchQuery);
+
     const [form, setForm] = useState({
       title: expense?.title ?? "",
       amount: expense?.amount?.toString() ?? "",
@@ -32,6 +45,15 @@ const AddExpenseModal = memo(
         : new Date(),
     });
 
+    const autocompleteOptions = useMemo<AutocompleteOption[]>(() => {
+      return searchResults.map((exp) => ({
+        id: exp.id,
+        label: exp.title,
+        categoryId: exp.category?.id,
+        paymentMethodId: exp.paymentMethod?.id,
+      }));
+    }, [searchResults]);
+
     const resetForm = useCallback(() => {
       setForm({
         title: "",
@@ -40,6 +62,7 @@ const AddExpenseModal = memo(
         paymentMethodId: 0,
         expenseDate: new Date(),
       });
+      setSearchQuery("");
     }, []);
 
     const handleSubmit = useCallback(() => {
@@ -73,6 +96,16 @@ const AddExpenseModal = memo(
       onClose();
     }, [form, expense, resetForm, onClose, updateExpense, createExpense]);
 
+    const handleSelectExpense = useCallback((option: AutocompleteOption) => {
+      console.log("Selected option:", option);
+      setForm((prev) => ({
+        ...prev,
+        title: option.label,
+        categoryId: option.categoryId,
+        paymentMethodId: option.paymentMethodId,
+      }));
+    }, []);
+
     const handleClose = useCallback(() => {
       resetForm();
       onClose();
@@ -98,13 +131,17 @@ const AddExpenseModal = memo(
           <Modal.Header title={expense ? "Edit Expense" : "Add Expense"} />
           <Modal.Body>
             <View className="gap-4">
-              <Input
+              <AutocompleteInput
                 label="Title"
-                placeholder="Enter title"
+                placeholder="Search or enter title"
                 value={form.title}
-                onChangeText={(text: string) =>
-                  setForm({ ...form, title: text })
-                }
+                onChangeText={(text: string) => {
+                  setForm({ ...form, title: text });
+                  setSearchQuery(text);
+                }}
+                onSelectOption={handleSelectExpense}
+                options={autocompleteOptions}
+                loading={searchLoading}
               />
 
               <Input
@@ -162,7 +199,7 @@ const AddExpenseModal = memo(
         </Modal>
       </>
     );
-  }
+  },
 );
 
 AddExpenseModal.displayName = "AddExpenseModal";

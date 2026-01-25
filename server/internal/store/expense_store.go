@@ -74,7 +74,7 @@ type ExpenseStore interface {
 	UpdateExpense(id int64, expense *Expense) (*Expense, error)
 	ListExpensesByUserID(userID int, queryParams ExpenseQueryParams) ([]*Expense, *ExpensePaginationData, *ExpenseRelatedItems, *ExpenseMetaItems, error)
 	ListExpensesTotalPerDay(userID int, queryParams ExpenseTotalPerDayQueryParams) ([]*ExpenseTotalPerDay, *ExpenseMetaItems, error)
-	SearchExpensesByTitle(userID int, title string) ([]*Expense, error)
+	SearchExpensesByTitle(userID int, title string) ([]*Expense, *ExpenseRelatedItems, error)
 }
 
 func (pg *PostgresExpenseStore) CreateExpense(expense *Expense) (*Expense, error) {
@@ -422,24 +422,35 @@ func (pg *PostgresExpenseStore) ListExpensesTotalPerDay(userID int, queryParams 
 	return expenseTotalPerDays, metaItems, nil
 }
 
-func (pg *PostgresExpenseStore) SearchExpensesByTitle(userID int, title string) ([]*Expense, error) {
+func (pg *PostgresExpenseStore) SearchExpensesByTitle(userID int, title string) ([]*Expense, *ExpenseRelatedItems, error) {
 	var expenses []*Expense = []*Expense{}
+	var categories = make(map[int]*Category)
+	var paymentMethods = make(map[int]*PaymentMethod)
 
 	query := `
-		SELECT 
-			id, 
-			category_id,
-			payment_method_id, 
-			title,
-			amount, 
-			expense_date
-		FROM expenses
-		WHERE 
-			user_id = $1 AND 
-			title ILIKE '%' || $2 || '%'
-		ORDER BY expense_date DESC, created_at DESC
-	`
+			SELECT DISTINCT ON (e.title)
+				e.id, 
+				e.category_id,
+				e.payment_method_id, 
+				e.title,
+				e.amount, 
+				e.expense_date,
+				c.id AS category_id,
+				c.name AS category_name,
+				p.id AS payment_method_id,
+				p.name AS payment_method_name
+			FROM expenses e
+			LEFT JOIN categories c ON c.id = e.category_id AND c.user_id = $1
+			LEFT JOIN payment_methods p ON p.id = e.payment_method_id AND p.user_id = $1
+			WHERE 
+				e.user_id = $1
+				AND e.title ILIKE '%' || $2 || '%'
 
+			ORDER BY 
+				e.title,
+				e.expense_date DESC,
+				e.created_at DESC
+	`
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -451,13 +462,15 @@ func (pg *PostgresExpenseStore) SearchExpensesByTitle(userID int, title string) 
 	)
 
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	defer rows.Close()
 
 	for rows.Next() {
 		var expense Expense
+		var category Category
+		var paymentMethod PaymentMethod
 		err := rows.Scan(
 			&expense.ID,
 			&expense.CategoryID,
@@ -465,17 +478,26 @@ func (pg *PostgresExpenseStore) SearchExpensesByTitle(userID int, title string) 
 			&expense.Title,
 			&expense.Amount,
 			&expense.ExpenseDate,
+			&category.ID,
+			&category.Name,
+			&paymentMethod.ID,
+			&paymentMethod.Name,
 		)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		expenses = append(expenses, &expense)
+		categories[category.ID] = &category
+		paymentMethods[paymentMethod.ID] = &paymentMethod
 	}
 
 	if err = rows.Err(); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return expenses, nil
+	return expenses, &ExpenseRelatedItems{
+		Categories:     categories,
+		PaymentMethods: paymentMethods,
+	}, nil
 }

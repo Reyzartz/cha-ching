@@ -61,7 +61,7 @@ export interface IGetExpenseStatsPerDayParams {
 
 export class ExpenseService extends ApiClient {
   async getExpenses(
-    params: IGetExpensesParams = {}
+    params: IGetExpensesParams = {},
   ): Promise<
     IServerResponse<IExpenseAPIData[], IExpenseRelatedItems, IExpenseMetaItems>
   > {
@@ -76,12 +76,12 @@ export class ExpenseService extends ApiClient {
       queryParams.set("payment_method_id", params.paymentMethodId.toString());
 
     return this.get<IExpenseAPIData[], IExpenseRelatedItems, IExpenseMetaItems>(
-      `/expenses?${queryParams.toString()}`
+      `/expenses?${queryParams.toString()}`,
     );
   }
 
   async createExpense(
-    expense: ICreateExpensePayload
+    expense: ICreateExpensePayload,
   ): Promise<IServerResponse<IExpenseAPIData>> {
     return this.post<IExpenseAPIData>("/expenses", {
       category_id: expense.categoryId,
@@ -94,7 +94,7 @@ export class ExpenseService extends ApiClient {
 
   async updateExpense(
     expenseId: number,
-    expense: IUpdateExpensePayload
+    expense: IUpdateExpensePayload,
   ): Promise<IServerResponse<IExpenseAPIData>> {
     return this.put<IExpenseAPIData>(`/expenses/${expenseId}`, {
       category_id: expense.categoryId,
@@ -121,7 +121,18 @@ export class ExpenseService extends ApiClient {
       queryParams.set("payment_method_id", paymentMethodId.toString());
 
     return this.get<IExpenseStatsPerDayAPIData[], never, IExpenseMetaItems>(
-      `/expenses/stats/total-per-day?${queryParams.toString()}`
+      `/expenses/stats/total-per-day?${queryParams.toString()}`,
+    );
+  }
+
+  async searchExpenses(
+    query: string,
+  ): Promise<IServerResponse<IExpenseAPIData[]>> {
+    const queryParams = new URLSearchParams();
+    queryParams.set("query", query);
+
+    return this.get<IExpenseAPIData[]>(
+      `/expenses/search?${queryParams.toString()}`,
     );
   }
 }
